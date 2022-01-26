@@ -18,10 +18,12 @@ class Controller {
 
 		this.loginController = new LoginController();
 		this.requester = new Requester();
-
+		
+		this.start = this.start.bind(this);
+		
 		this.nameElement = document.getElementById('name');
 		this.startButton = document.getElementById('start');
-		this.startButton.addEventListener('click', e => this.start.call(this, e));
+		this.startButton.addEventListener('click', this.start);
 	}
 
 	refresh() {
@@ -33,7 +35,8 @@ class Controller {
 	}
 
 	start(event) {
-		console.log('Start.', this);
+		console.log('Start', 'this', this, 'event', event);
+		return;
 		this.requester.connect(this.nameElement.value, r => this.connected.call(this, r));
 	}
 
