@@ -1,4 +1,4 @@
-import Requester from './modules/support.mjs';
+import { Requester } from './modules/support.mjs';
 import { Login, LoginController } from './modules/login.mjs';
 
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
