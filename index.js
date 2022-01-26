@@ -36,7 +36,6 @@ class Controller {
 
 	start(event) {
 		console.log('Start', 'this', this, 'event', event);
-		return;
 		this.requester.connect(this.nameElement.value, r => this.connected.call(this, r));
 	}
 
