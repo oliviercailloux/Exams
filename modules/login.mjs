@@ -69,15 +69,15 @@ export class Login {
 }
 
 export class LoginController {
-	localStorage;
+	#localStorage;
 
 	constructor() {
-		this.localStorage = window.localStorage;
+		this.#localStorage = window.localStorage;
 	}
 
 	readLogin() {
-		const username = this.localStorage.getItem('username');
-		const password = this.localStorage.getItem('password');
+		const username = this.#localStorage.getItem('username');
+		const password = this.#localStorage.getItem('password');
 		const hasUsername = username != null;
 		const hasPassword = password != null;
 		if (hasUsername !== hasPassword)
@@ -94,13 +94,13 @@ export class LoginController {
 			throw new Error('Unknown login, can’t write.');
 		}
 
-		this.localStorage.setItem('username', login.username);
-		this.localStorage.setItem('password', login.password);
+		this.#localStorage.setItem('username', login.username);
+		this.#localStorage.setItem('password', login.password);
 	}
 
 	deleteLogin() {
-		this.localStorage.removeItem('username');
-		this.localStorage.removeItem('password');
+		this.#localStorage.removeItem('username');
+		this.#localStorage.removeItem('password');
 	}
 }
 
