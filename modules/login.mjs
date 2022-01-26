@@ -55,15 +55,15 @@ export class Login {
 		return encoded;
 	}
 
-	getUsername() {
+	get username() {
 		return this.#username;
 	}
 
-	getPassword() {
+	get password() {
 		return this.#password;
 	}
 
-	asCredentials() {
+	get credentials() {
 		return window.btoa(`${this.#stringToUtf8ToBase64(this.#username)}:${this.#stringToUtf8ToBase64(this.#password)}`);
 	}
 }

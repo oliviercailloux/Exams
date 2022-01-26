@@ -1,48 +1,3 @@
-/**
- * Converts a JS string to a UTF-8 "byte" array.
- * @param {string} str 16-bit unicode string.
- * @return {!Array<number>} UTF-8 byte array.
- * From https://github.com/google/closure-library/blob/master/closure/goog/crypt/crypt.js#L114
- */
-export function stringToUtf8ByteArray(str) {
-	let out = [], p = 0;
-	for (let i = 0; i < str.length; i++) {
-		let c = str.charCodeAt(i);
-		if (c < 128) {
-			out[p++] = c;
-		} else if (c < 2048) {
-			out[p++] = (c >> 6) | 192;
-			out[p++] = (c & 63) | 128;
-		} else if (
-			((c & 0xFC00) == 0xD800) && (i + 1) < str.length &&
-			((str.charCodeAt(i + 1) & 0xFC00) == 0xDC00)) {
-			// Surrogate Pair
-			c = 0x10000 + ((c & 0x03FF) << 10) + (str.charCodeAt(++i) & 0x03FF);
-			out[p++] = (c >> 18) | 240;
-			out[p++] = ((c >> 12) & 63) | 128;
-			out[p++] = ((c >> 6) & 63) | 128;
-			out[p++] = (c & 63) | 128;
-		} else {
-			out[p++] = (c >> 12) | 224;
-			out[p++] = ((c >> 6) & 63) | 128;
-			out[p++] = (c & 63) | 128;
-		}
-	}
-	return out;
-};
-
-/** I convert to UTF-8 because it seems much more prevalent (https://en.wikipedia.org/wiki/Popularity_of_text_encodings). Code taken from https://stackoverflow.com/a/9458996. */
-export function stringToUtf8ToBase64(input) {
-	const utf8 = stringToUtf8ByteArray(input);
-	let result = '';
-	for (let i = 0; i < utf8.length; i++) {
-		result += String.fromCharCode(utf8[i]);
-	}
-	const encoded = window.btoa(result);
-	console.log(`Encoded ${input} to ${encoded}.`);
-	return encoded;
-}
-
 export class Requester {
 	url;
 	listRequested;
@@ -85,7 +40,7 @@ export class Requester {
 	getFetchInitWithAuth(login, method, body = undefined) {
 		console.log('Fetching with', login, '.');
 		const init = this.getFetchInit(method, body);
-		const credentials = login.asCredentials();
+		const credentials = login.credentials;
 		const authString = `Basic ${credentials}`;
 		init.headers.set('Authorization', authString);
 		console.log(`Appended ${authString}.`);
@@ -143,51 +98,5 @@ export class Requester {
 	answer(login, questionId, checkedIds, onAnswer) {
 		const init = this.getFetchInitWithAuth(login, 'POST', JSON.stringify(checkedIds));
 		fetch(`${this.url}exam/answer/${questionId}`, init).then(onAnswer);
-	}
-}
-
-export class Login {
-	hasUsername;
-
-	username;
-	password;
-
-	constructor(username, password) {
-		if (username === null || password === null)
-			throw new Error("Bad login use.");
-
-		const uUndef = username === undefined;
-		const pUndef = password === undefined;
-		if (uUndef !== pUndef)
-			throw new Error("Bad login use.");
-
-		if (uUndef) {
-			this.init();
-		} else {
-			this.username = username;
-			this.password = password;
-			this.hasUsername = true;
-		}
-	}
-
-	getAsJsonBody() {
-		const body = {
-			username: this.username,
-			password: this.password
-		}
-		return JSON.stringify(body);
-	}
-
-	init() {
-		let l = window.localStorage;
-
-		this.username = l.getItem('username');
-		this.password = l.getItem('password');
-		this.hasUsername = l.getItem('username') !== null;
-		const hasPassword = l.getItem('password') !== null;
-		if (this.hasUsername !== hasPassword)
-			throw new Error("Bad login state.");
-
-		console.log('Found username', this.username);
 	}
 }
