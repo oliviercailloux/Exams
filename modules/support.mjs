@@ -85,7 +85,7 @@ export class Requester {
 	getFetchInitWithAuth(login, method, body = undefined) {
 		console.log('Fetching with', login, '.');
 		const init = this.getFetchInit(method, body);
-		const credentials = window.btoa(`${stringToUtf8ToBase64(login.username)}:${stringToUtf8ToBase64(login.password)}`)
+		const credentials = login.asCredentials();
 		const authString = `Basic ${credentials}`;
 		init.headers.set('Authorization', authString);
 		console.log(`Appended ${authString}.`);
