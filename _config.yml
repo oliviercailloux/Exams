@@ -1,0 +1,14 @@
+plugins:
+  - jekyll-sitemap
+  - jekyll-seo-tag
+destination: docs
+url: https://oliviercailloux.github.io
+baseurl: /exam
+exclude:
+  - README.adoc
+  - Local notes.adoc
+title: "Exam"
+tagline: "Testez vos connaissances"
+description: "Tester ses connaissances avec des questions à choix multiples"
+lang: fr
+
