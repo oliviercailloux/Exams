@@ -72,6 +72,10 @@ export class LoginController {
 	#localStorage;
 
 	constructor() {
+		this.readLogin = this.readLogin.bind(this);
+		this.write = this.write.bind(this);
+		this.deleteLogin = this.deleteLogin.bind(this);
+		
 		this.#localStorage = window.localStorage;
 	}
 
