@@ -1,13 +1,13 @@
 export class Login {
-	username;
-	password;
+	#username;
+	#password;
 
 	constructor(username, password) {
-		if (username === null || password === null)
+		if (username == null || password == null)
 			throw new Error("Bad login use.");
 
-		this.username = username;
-		this.password = password;
+		this.#username = username;
+		this.#password = password;
 	}
 
 	/**
@@ -16,7 +16,7 @@ export class Login {
 	 * @return {!Array<number>} UTF-8 byte array.
 	 * From https://github.com/google/closure-library/blob/master/closure/goog/crypt/crypt.js#L114
 	 */
-	stringToUtf8ByteArray(str) {
+	#stringToUtf8ByteArray(str) {
 		let out = [], p = 0;
 		for (let i = 0; i < str.length; i++) {
 			let c = str.charCodeAt(i);
@@ -44,8 +44,8 @@ export class Login {
 	};
 
 	/** I convert to UTF-8 because it seems much more prevalent (https://en.wikipedia.org/wiki/Popularity_of_text_encodings). Code taken from https://stackoverflow.com/a/9458996. */
-	stringToUtf8ToBase64(input) {
-		const utf8 = this.stringToUtf8ByteArray(input);
+	#stringToUtf8ToBase64(input) {
+		const utf8 = this.#stringToUtf8ByteArray(input);
 		let result = '';
 		for (let i = 0; i < utf8.length; i++) {
 			result += String.fromCharCode(utf8[i]);
@@ -56,15 +56,15 @@ export class Login {
 	}
 
 	getUsername() {
-		return this.username;
+		return this.#username;
 	}
 
 	getPassword() {
-		return this.password;
+		return this.#password;
 	}
 
 	asCredentials() {
-		return window.btoa(`${this.stringToUtf8ToBase64(this.username)}:${this.stringToUtf8ToBase64(this.password)}`);
+		return window.btoa(`${this.#stringToUtf8ToBase64(this.#username)}:${this.#stringToUtf8ToBase64(this.#password)}`);
 	}
 }
 
@@ -78,22 +78,26 @@ export class LoginController {
 	readLogin() {
 		const username = this.localStorage.getItem('username');
 		const password = this.localStorage.getItem('password');
-		const hasUsername = username !== null;
-		const hasPassword = password !== null;
+		const hasUsername = username != null;
+		const hasPassword = password != null;
 		if (hasUsername !== hasPassword)
-			throw new Error("Bad login state.");
+			throw new Error("Bad local login state.");
 
 		if (!hasUsername) {
 			return undefined;
 		}
 		return new Login(username, password);
 	}
-	
+
 	write(login) {
+		if (login == null) {
+			throw new Error('Unknown login, can’t write.');
+		}
+
 		this.localStorage.setItem('username', login.username);
 		this.localStorage.setItem('password', login.password);
 	}
-	
+
 	deleteLogin() {
 		this.localStorage.removeItem('username');
 		this.localStorage.removeItem('password');
