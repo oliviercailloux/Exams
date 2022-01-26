@@ -1,9 +1,11 @@
+import { Login } from './login.mjs';
+
 export class Requester {
 	#url;
 	listRequested;
 	lastRequestedPhrasingId;
 	lastRequestedAcceptationQuestionId;
-	
+
 	constructor() {
 		/* Thanks to https://stackoverflow.com/a/57949518/. */
 		const isLocalhost =
@@ -25,70 +27,62 @@ export class Requester {
 		this.lastRequestedAcceptationQuestionId = null;
 	}
 
-	getFetchInit(method, body = undefined) {
+	#getFetchInit(method = 'GET', login = undefined) {
 		let headers = new Headers();
 		const init = {
 			headers: headers,
 			method: method,
-			body: body
+			body: undefined
 		};
-		headers.set('content-type', 'application/json');
-		headers.set('Accept', 'application/json');
-		return init;
-	}
 
-	getFetchInitWithAuth(login, method, body = undefined) {
-		console.log('Fetching with', login, '.');
-		const init = this.getFetchInit(method, body);
-		const credentials = login.credentials;
-		const authString = `Basic ${credentials}`;
-		init.headers.set('Authorization', authString);
-		console.log(`Appended ${authString}.`);
+		if (login !== undefined) {
+			const credentials = login.credentials;
+			const authString = `Basic ${credentials}`;
+			init.headers.set('Authorization', authString);
+		}
+
 		return init;
 	}
 
 	connect(username, onAnswer) {
-		let headers = new Headers();
-		const init = {
-			headers: headers,
-			method: 'POST',
-			body: username
-		};
-		headers.set('content-type', 'text/plain');
-		headers.set('Accept', 'text/plain');
+		const init = this.#getFetchInit('POST');
+		init.headers.set('Accept', 'text/plain');
+		init.body = username;
+		init.headers.set('content-type', 'text/plain');
 
-		console.log('Connecting', init);
 		fetch(`${this.#url}exam/connect`, init).then(onAnswer);
 	}
 
 	list(login, onAnswer) {
-		if(this.listRequested) {
+		if (this.listRequested) {
 			console.log('Already an ongoing request for list');
 			return;
 		}
-		
+
 		console.log('Listing.');
-		const init = this.getFetchInitWithAuth(login, 'GET');
-		this.listRequested = true;
+		const init = this.#getFetchInit('GET', login);
+		init.headers.set('Accept', 'application/json');
+		
 		const p = fetch(`${this.#url}exam/list`, init);
+		this.listRequested = true;
 		p.then(response => { this.listRequested = false; });
 		p.then(onAnswer);
 	}
 
 	getQuestion(login, id, onPhrasingAnswer, onAdoptedAnswer) {
-		if((this.lastRequestedAcceptationQuestionId === id) || this.lastRequestedPhrasingId === id) {
+		if ((this.lastRequestedAcceptationQuestionId === id) || this.lastRequestedPhrasingId === id) {
 			console.log('Already an ongoing request for question', id);
 			return;
 		}
 		this.lastRequestedPhrasingId = id;
 		this.lastRequestedAcceptationQuestionId = id;
-		
-		const init = this.getFetchInitWithAuth(login, 'GET');
+
+		const init = this.#getFetchInit('GET', login);
 		init.headers.set('Accept', 'application/xhtml+xml');
 		const promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init);
 		promisePhrasing.then(this.lastRequestedPhrasingId = null);
 		promisePhrasing.then(onPhrasingAnswer);
-		
+
 		init.headers.set('Accept', 'application/json');
 		const promiseAnswer = fetch(`${this.#url}exam/answer/${id}`, init);
 		promiseAnswer.then(this.lastRequestedAcceptationQuestionId = null);
@@ -96,7 +90,10 @@ export class Requester {
 	}
 
 	answer(login, questionId, checkedIds, onAnswer) {
-		const init = this.getFetchInitWithAuth(login, 'POST', JSON.stringify(checkedIds));
+		const init = this.#getFetchInit('POST', login);
+		init.body = JSON.stringify(checkedIds);
+		init.headers.set('content-type', 'application/json');
+		
 		fetch(`${this.#url}exam/answer/${questionId}`, init).then(onAnswer);
 	}
 }
