@@ -1,3 +1,6 @@
+import Requester from './modules/support.mjs';
+import { Login, LoginController } from './modules/login.mjs';
+
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 	throw new Error('Protocol should be https.');
 }
@@ -18,9 +21,9 @@ class Controller {
 	checkboxElements;
 
 	constructor() {
-		this.login = new Login();
-		if (!this.login.hasUsername) {
-			throw new Error('No username.');
+		this.login = new LoginController().readLogin();
+		if (this.login === undefined) {
+			throw new Error('No login.');
 		}
 		this.requester = new Requester();
 		this.ids = null;

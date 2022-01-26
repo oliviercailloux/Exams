@@ -1,3 +1,6 @@
+import Requester from './modules/support.mjs';
+import { Login, LoginController } from './modules/login.mjs';
+
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 	throw new Error('Protocol should be https.');
 }
@@ -11,7 +14,7 @@ class Controller {
 
 	constructor() {
 		console.log('Building controller.');
-		
+
 		this.requester = new Requester();
 
 		this.nameElement = document.getElementById('name');
@@ -20,9 +23,9 @@ class Controller {
 	}
 
 	refresh() {
-		this.login = new Login();
+		this.login = LoginController.readLogin();
 
-		if (this.login.hasUsername) {
+		if (this.login !== undefined) {
 			this.requester.list(this.login, r => this.listed.call(this, r));
 		}
 	}
@@ -38,9 +41,8 @@ class Controller {
 	}
 
 	gotPassword(password) {
-		let l = window.localStorage;
-		l.setItem('username', this.nameElement.value);
-		l.setItem('password', password);
+		const login = new Login(this.nameElement.value, password);
+		LoginController.write(login);
 		this.refresh();
 	}
 
@@ -53,17 +55,15 @@ class Controller {
 		console.log('Got list', list);
 		this.navigate(list[0]);
 	}
-	
+
 	navigate(id) {
 		const target = `exam.html#${id}`;
 		console.log('Navigating to', target);
 		window.location.href = target;
 	}
-	
+
 	resetLogin() {
-		let l = window.localStorage;
-		l.removeItem('username');
-		l.removeItem('password');
+		LoginController.deleteLogin();
 	}
 }
 

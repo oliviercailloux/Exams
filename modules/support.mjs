@@ -4,10 +4,10 @@
  * @return {!Array<number>} UTF-8 byte array.
  * From https://github.com/google/closure-library/blob/master/closure/goog/crypt/crypt.js#L114
  */
-function stringToUtf8ByteArray(str) {
+export function stringToUtf8ByteArray(str) {
 	let out = [], p = 0;
 	for (let i = 0; i < str.length; i++) {
-		const c = str.charCodeAt(i);
+		let c = str.charCodeAt(i);
 		if (c < 128) {
 			out[p++] = c;
 		} else if (c < 2048) {
@@ -32,7 +32,7 @@ function stringToUtf8ByteArray(str) {
 };
 
 /** I convert to UTF-8 because it seems much more prevalent (https://en.wikipedia.org/wiki/Popularity_of_text_encodings). Code taken from https://stackoverflow.com/a/9458996. */
-function stringToUtf8ToBase64(input) {
+export function stringToUtf8ToBase64(input) {
 	const utf8 = stringToUtf8ByteArray(input);
 	let result = '';
 	for (let i = 0; i < utf8.length; i++) {
@@ -43,7 +43,7 @@ function stringToUtf8ToBase64(input) {
 	return encoded;
 }
 
-class Requester {
+export class Requester {
 	url;
 	listRequested;
 	lastRequestedPhrasingId;
@@ -70,19 +70,21 @@ class Requester {
 		this.lastRequestedAcceptationQuestionId = null;
 	}
 
-	getFetchInit() {
+	getFetchInit(method, body = undefined) {
 		let headers = new Headers();
 		const init = {
-			headers: headers
+			headers: headers,
+			method: method,
+			body: body
 		};
 		headers.set('content-type', 'application/json');
 		headers.set('Accept', 'application/json');
 		return init;
 	}
 
-	getFetchInitWithAuth(login) {
+	getFetchInitWithAuth(login, method, body = undefined) {
 		console.log('Fetching with', login, '.');
-		const init = this.getFetchInit();
+		const init = this.getFetchInit(method, body);
 		const credentials = window.btoa(`${stringToUtf8ToBase64(login.username)}:${stringToUtf8ToBase64(login.password)}`)
 		const authString = `Basic ${credentials}`;
 		init.headers.set('Authorization', authString);
@@ -111,8 +113,7 @@ class Requester {
 		}
 		
 		console.log('Listing.');
-		const init = this.getFetchInitWithAuth(login);
-		init.method = 'GET';
+		const init = this.getFetchInitWithAuth(login, 'GET');
 		this.listRequested = true;
 		const p = fetch(`${this.url}exam/list`, init);
 		p.then(response => { this.listRequested = false; });
@@ -127,8 +128,7 @@ class Requester {
 		this.lastRequestedPhrasingId = id;
 		this.lastRequestedAcceptationQuestionId = id;
 		
-		const init = this.getFetchInitWithAuth(login);
-		init.method = 'GET';
+		const init = this.getFetchInitWithAuth(login, 'GET');
 		init.headers.set('Accept', 'application/xhtml+xml');
 		const promisePhrasing = fetch(`${this.url}question/phrasing/${id}`, init);
 		promisePhrasing.then(this.lastRequestedPhrasingId = null);
@@ -141,14 +141,12 @@ class Requester {
 	}
 
 	answer(login, questionId, checkedIds, onAnswer) {
-		const init = this.getFetchInitWithAuth(login);
-		init.method = 'POST';
-		init.body = JSON.stringify(checkedIds);
+		const init = this.getFetchInitWithAuth(login, 'POST', JSON.stringify(checkedIds));
 		fetch(`${this.url}exam/answer/${questionId}`, init).then(onAnswer);
 	}
 }
 
-class Login {
+export class Login {
 	hasUsername;
 
 	username;
@@ -168,7 +166,7 @@ class Login {
 		} else {
 			this.username = username;
 			this.password = password;
-			this.hadId = true;
+			this.hasUsername = true;
 		}
 	}
 
