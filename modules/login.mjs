@@ -1,6 +1,6 @@
 export class Login {
-	private username;
-	private password;
+	username;
+	password;
 
 	constructor(username, password) {
 		if (username === null || password === null)
@@ -16,7 +16,7 @@ export class Login {
 	 * @return {!Array<number>} UTF-8 byte array.
 	 * From https://github.com/google/closure-library/blob/master/closure/goog/crypt/crypt.js#L114
 	 */
-	private stringToUtf8ByteArray(str) {
+	stringToUtf8ByteArray(str) {
 		let out = [], p = 0;
 		for (let i = 0; i < str.length; i++) {
 			let c = str.charCodeAt(i);
@@ -44,7 +44,7 @@ export class Login {
 	};
 
 	/** I convert to UTF-8 because it seems much more prevalent (https://en.wikipedia.org/wiki/Popularity_of_text_encodings). Code taken from https://stackoverflow.com/a/9458996. */
-	private stringToUtf8ToBase64(input) {
+	stringToUtf8ToBase64(input) {
 		const utf8 = this.stringToUtf8ByteArray(input);
 		let result = '';
 		for (let i = 0; i < utf8.length; i++) {
@@ -55,27 +55,27 @@ export class Login {
 		return encoded;
 	}
 
-	public getUsername() {
+	getUsername() {
 		return this.username;
 	}
 
-	public getPassword() {
+	getPassword() {
 		return this.password;
 	}
 
-	public asCredentials() {
+	asCredentials() {
 		return window.btoa(`${this.stringToUtf8ToBase64(this.username)}:${this.stringToUtf8ToBase64(this.password)}`);
 	}
 }
 
 export class LoginController {
-	private localStorage;
+	localStorage;
 
 	constructor() {
 		this.localStorage = window.localStorage;
 	}
 
-	public readLogin() {
+	readLogin() {
 		const username = this.localStorage.getItem('username');
 		const password = this.localStorage.getItem('password');
 		const hasUsername = username !== null;
@@ -89,19 +89,19 @@ export class LoginController {
 		return new Login(username, password);
 	}
 	
-	public write(login) {
+	write(login) {
 		this.localStorage.setItem('username', login.username);
 		this.localStorage.setItem('password', login.password);
 	}
 	
-	public deleteLogin() {
+	deleteLogin() {
 		this.localStorage.removeItem('username');
 		this.localStorage.removeItem('password');
 	}
 }
 
 export class LoginGenerator {
-	public static generateLogin(username = 'current time') {
+	static generateLogin(username = 'current time') {
 		const password = 'generated password';
 		return new Login(username, password);
 	}
