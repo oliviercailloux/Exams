@@ -6,6 +6,7 @@ if (window.location.protocol !== 'https:' && location.hostname !== "localhost" &
 }
 
 class Controller {
+	loginController;
 	login;
 	requester;
 
@@ -15,6 +16,7 @@ class Controller {
 	constructor() {
 		console.log('Building controller.');
 
+		this.loginController = new LoginController();
 		this.requester = new Requester();
 
 		this.nameElement = document.getElementById('name');
@@ -23,7 +25,7 @@ class Controller {
 	}
 
 	refresh() {
-		this.login = LoginController.readLogin();
+		this.login = this.loginController.readLogin();
 
 		if (this.login !== undefined) {
 			this.requester.list(this.login, r => this.listed.call(this, r));
@@ -42,7 +44,7 @@ class Controller {
 
 	gotPassword(password) {
 		const login = new Login(this.nameElement.value, password);
-		LoginController.write(login);
+		this.loginController.write(login);
 		this.refresh();
 	}
 
@@ -63,7 +65,7 @@ class Controller {
 	}
 
 	resetLogin() {
-		LoginController.deleteLogin();
+		this.loginController.deleteLogin();
 	}
 }
 
