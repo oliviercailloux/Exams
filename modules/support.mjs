@@ -1,5 +1,5 @@
 export class Requester {
-	url;
+	#url;
 	listRequested;
 	lastRequestedPhrasingId;
 	lastRequestedAcceptationQuestionId;
@@ -14,11 +14,11 @@ export class Requester {
 			window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
 			;
 		if (isLocalhost) {
-			this.url = 'http://localhost:8080/v0/';
+			this.#url = `http://${window.location.hostname}:8080/v0/`;
 		} else {
-			this.url = 'https://todo.herokuapp.com/v0/';
+			this.#url = 'https://todo.herokuapp.com/v0/';
 		}
-		console.log('Talking to', this.url);
+		console.log('Talking to', this.#url);
 
 		this.listRequested = false;
 		this.lastRequestedPhrasingId = null;
@@ -58,7 +58,7 @@ export class Requester {
 		headers.set('Accept', 'text/plain');
 
 		console.log('Connecting', init);
-		fetch(`${this.url}exam/connect`, init).then(onAnswer);
+		fetch(`${this.#url}exam/connect`, init).then(onAnswer);
 	}
 
 	list(login, onAnswer) {
@@ -70,7 +70,7 @@ export class Requester {
 		console.log('Listing.');
 		const init = this.getFetchInitWithAuth(login, 'GET');
 		this.listRequested = true;
-		const p = fetch(`${this.url}exam/list`, init);
+		const p = fetch(`${this.#url}exam/list`, init);
 		p.then(response => { this.listRequested = false; });
 		p.then(onAnswer);
 	}
@@ -85,18 +85,18 @@ export class Requester {
 		
 		const init = this.getFetchInitWithAuth(login, 'GET');
 		init.headers.set('Accept', 'application/xhtml+xml');
-		const promisePhrasing = fetch(`${this.url}question/phrasing/${id}`, init);
+		const promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init);
 		promisePhrasing.then(this.lastRequestedPhrasingId = null);
 		promisePhrasing.then(onPhrasingAnswer);
 		
 		init.headers.set('Accept', 'application/json');
-		const promiseAnswer = fetch(`${this.url}exam/answer/${id}`, init);
+		const promiseAnswer = fetch(`${this.#url}exam/answer/${id}`, init);
 		promiseAnswer.then(this.lastRequestedAcceptationQuestionId = null);
 		promiseAnswer.then(onAdoptedAnswer);
 	}
 
 	answer(login, questionId, checkedIds, onAnswer) {
 		const init = this.getFetchInitWithAuth(login, 'POST', JSON.stringify(checkedIds));
-		fetch(`${this.url}exam/answer/${questionId}`, init).then(onAnswer);
+		fetch(`${this.#url}exam/answer/${questionId}`, init).then(onAnswer);
 	}
 }
