@@ -20,6 +20,7 @@ class Controller {
 		this.requester = new Requester();
 		
 		this.start = this.start.bind(this);
+		this.gotPassword = this.gotPassword.bind(this);
 		
 		this.nameElement = document.getElementById('name');
 		this.startButton = document.getElementById('start');
@@ -35,13 +36,7 @@ class Controller {
 	}
 
 	start(event) {
-		console.log('Start', 'this', this, 'event', event);
-		this.requester.connect(this.nameElement.value, r => this.connected.call(this, r));
-	}
-
-	connected(response) {
-		console.log('Connected.', response);
-		response.text().then(p => this.gotPassword.call(this, p));
+		this.requester.connect(this.nameElement.value).then(this.gotPassword);
 	}
 
 	gotPassword(password) {

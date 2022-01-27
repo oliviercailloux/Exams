@@ -27,7 +27,7 @@ export class Requester {
 		this.lastRequestedAcceptationQuestionId = null;
 	}
 
-	#getFetchInit(method = 'GET', login = undefined) {
+	static #getFetchInit(method = 'GET', login = undefined) {
 		let headers = new Headers();
 		const init = {
 			headers: headers,
@@ -44,56 +44,67 @@ export class Requester {
 		return init;
 	}
 
-	connect(username, onAnswer) {
-		const init = this.#getFetchInit('POST');
+	static #getErrorHandlerExpecting(expectedStatus, requestName) {
+		return function handle(response) {
+			console.log('Handling', response);
+			if (response.status !== expectedStatus) {
+				throw new Error('Unexpected response status to ' + requestName + ': ' + response.status);
+			}
+			return response;
+		};
+	}
+
+	connect(username) {
+		const init = Requester.#getFetchInit('POST');
 		init.headers.set('Accept', 'text/plain');
 		init.body = username;
 		init.headers.set('content-type', 'text/plain');
 
-		fetch(`${this.#url}exam/connect`, init).then(onAnswer);
+		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'connect');
+		return fetch(`${this.#url}exam/connect`, init).then(errorHandler).then(r => r.text());
 	}
 
-	list(login, onAnswer) {
+	list(login) {
 		if (this.listRequested) {
 			console.log('Already an ongoing request for list');
 			return;
 		}
 
-		console.log('Listing.');
-		const init = this.#getFetchInit('GET', login);
+		const init = Requester.#getFetchInit('GET', login);
 		init.headers.set('Accept', 'application/json');
-		
+
 		const p = fetch(`${this.#url}exam/list`, init);
 		this.listRequested = true;
-		p.then(response => { this.listRequested = false; });
-		p.then(onAnswer);
+		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'list');
+		p.then(errorHandler).then(response => { this.listRequested = false; return response; });
+		return p;
 	}
 
-	getQuestion(login, id, onPhrasingAnswer, onAdoptedAnswer) {
+	getQuestion(login, id) {
 		if ((this.lastRequestedAcceptationQuestionId === id) || this.lastRequestedPhrasingId === id) {
 			console.log('Already an ongoing request for question', id);
 			return;
 		}
-		this.lastRequestedPhrasingId = id;
-		this.lastRequestedAcceptationQuestionId = id;
 
-		const init = this.#getFetchInit('GET', login);
+		const init = Requester.#getFetchInit('GET', login);
 		init.headers.set('Accept', 'application/xhtml+xml');
 		const promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init);
+		this.lastRequestedPhrasingId = id;
 		promisePhrasing.then(this.lastRequestedPhrasingId = null);
-		promisePhrasing.then(onPhrasingAnswer);
 
 		init.headers.set('Accept', 'application/json');
 		const promiseAnswer = fetch(`${this.#url}exam/answer/${id}`, init);
+		this.lastRequestedAcceptationQuestionId = id;
 		promiseAnswer.then(this.lastRequestedAcceptationQuestionId = null);
-		promiseAnswer.then(onAdoptedAnswer);
+		
+		return Promise.all(new Set().add(promisePhrasing).add(promiseAnswer)).then(ar => new Object({phrasing: ar[0], answer: ar[1]}));
 	}
 
 	answer(login, questionId, checkedIds, onAnswer) {
-		const init = this.#getFetchInit('POST', login);
+		const init = Requester.#getFetchInit('POST', login);
 		init.body = JSON.stringify(checkedIds);
 		init.headers.set('content-type', 'application/json');
-		
+
 		fetch(`${this.#url}exam/answer/${questionId}`, init).then(onAnswer);
 	}
 }
