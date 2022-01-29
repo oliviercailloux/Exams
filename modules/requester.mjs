@@ -2,9 +2,6 @@ import { Login } from './login.mjs';
 
 export class Requester {
 	#url;
-	listRequested;
-	lastRequestedPhrasingId;
-	lastRequestedAcceptationQuestionId;
 
 	constructor() {
 		/* Thanks to https://stackoverflow.com/a/57949518/. */
@@ -22,9 +19,11 @@ export class Requester {
 		}
 		console.log('Talking to', this.#url);
 
-		this.listRequested = false;
-		this.lastRequestedPhrasingId = null;
-		this.lastRequestedAcceptationQuestionId = null;
+		this.connect.bind(this);
+		this.list.bind(this);
+		this.getQuestion.bind(this);
+		this.#getQuestionElements.bind(this);
+		this.acceptClaims.bind(this);
 	}
 
 	static #getFetchInit(method = 'GET', login = undefined) {
@@ -65,46 +64,64 @@ export class Requester {
 	}
 
 	list(login) {
-		if (this.listRequested) {
-			console.log('Already an ongoing request for list');
-			return;
-		}
-
 		const init = Requester.#getFetchInit('GET', login);
 		init.headers.set('Accept', 'application/json');
 
-		const p = fetch(`${this.#url}exam/list`, init);
-		this.listRequested = true;
 		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'list');
-		p.then(errorHandler).then(response => { this.listRequested = false; return response; });
-		return p;
+		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json());
 	}
 
 	getQuestion(login, id) {
-		if ((this.lastRequestedAcceptationQuestionId === id) || this.lastRequestedPhrasingId === id) {
-			console.log('Already an ongoing request for question', id);
-			return;
+		const promises = new Set();
+		{
+			const init = Requester.#getFetchInit('GET', login);
+			init.headers.set('Accept', 'application/xhtml+xml');
+			const errorHandler = Requester.#getErrorHandlerExpecting(200, 'phrasing');
+			const promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init)
+				.then(errorHandler)
+				.then(r => r.text())
+				.then(t => new DOMParser().parseFromString(t, 'application/xhtml+xml'))
+				.then(this.#getQuestionElements);
+			promises.add(promisePhrasing);
 		}
 
-		const init = Requester.#getFetchInit('GET', login);
-		init.headers.set('Accept', 'application/xhtml+xml');
-		const promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init);
-		this.lastRequestedPhrasingId = id;
-		promisePhrasing.then(this.lastRequestedPhrasingId = null);
+		{
+			const init = Requester.#getFetchInit('GET', login);
+			init.headers.set('Accept', 'application/json');
+			const errorHandler = Requester.#getErrorHandlerExpecting(200, 'phrasing');
+			const promiseAcceptedClaims = fetch(`${this.#url}exam/answer/${id}`, init)
+				.then(errorHandler)
+				.then(r => r.json());
+			promises.add(promiseAcceptedClaims);
+		}
 
-		init.headers.set('Accept', 'application/json');
-		const promiseAnswer = fetch(`${this.#url}exam/answer/${id}`, init);
-		this.lastRequestedAcceptationQuestionId = id;
-		promiseAnswer.then(this.lastRequestedAcceptationQuestionId = null);
-		
-		return Promise.all(new Set().add(promisePhrasing).add(promiseAnswer)).then(ar => new Object({phrasing: ar[0], answer: ar[1]}));
+		return Promise.all(promises).then(ar => new Object({
+			questionElements: ar[0],
+			acceptedClaims: ar[1]
+		}));
 	}
 
-	answer(login, questionId, checkedIds, onAnswer) {
+	#getQuestionElements(phrasingDom) {
+		const body = phrasingDom.body;
+		const children = body.children;
+		const sectionChildren = Array.from(children).filter(e => e.tagName === 'section');
+		if (sectionChildren.length != 1) {
+			throw new Error('Unexpected sections inside body in ' + phrasingDom);
+		}
+		const sectionElement = sectionChildren[0];
+		const questionElements = Array.from(sectionElement.children);
+		if (questionElements.length === 0) {
+			throw new Error('No content');
+		}
+		return questionElements;
+	}
+
+	acceptClaims(login, questionId, acceptedClaimsIds) {
 		const init = Requester.#getFetchInit('POST', login);
-		init.body = JSON.stringify(checkedIds);
+		init.body = JSON.stringify(acceptedClaimsIds);
 		init.headers.set('content-type', 'application/json');
 
-		fetch(`${this.#url}exam/answer/${questionId}`, init).then(onAnswer);
+		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'acceptClaims');
+		return fetch(`${this.#url}exam/answer/${questionId}`, init).then(errorHandler);
 	}
 }

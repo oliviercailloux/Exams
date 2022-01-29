@@ -1,3 +1,4 @@
+import verify from './modules/utils.mjs';
 import Requester from './modules/requester.mjs';
 import { Login, LoginController } from './modules/login.mjs';
 
@@ -5,189 +6,253 @@ if (window.location.protocol !== 'https:' && location.hostname !== "localhost" &
 	throw new Error('Protocol should be https.');
 }
 
-class Controller {
-	login;
-	requester;
-	ids;
-	id;
-	index;
-	questionElements;
-	acceptedClaims;
+class Question {
+	#id;
+	#elements;
+	#checkboxElements;
 
+	constructor(id, elements) {
+		verify(id >= 0);
+
+		this.#id = id;
+		this.#elements = elements;
+
+		const inputs = Array.from(document.getElementsByTagName('input'));
+		this.#checkboxElements = inputs.filter(i => i.attributes.getNamedItem('type').value === 'checkbox');
+	}
+
+	get id() {
+		return this.#id;
+	}
+
+	get elements() {
+		return this.#elements;
+	}
+
+	get checkboxElements() {
+		return this.#checkboxElements;
+	}
+
+	get acceptedClaims() {
+		const arrayInts = this.#checkboxElements.filter(c => c.checked).map(c => c.id).map(this.#claimIdToInt);
+		return new Set(arrayInts);
+	}
+
+	markAcceptedClaims(acceptedClaims) {
+		for (let acceptedIndexOneBased of acceptedClaims) {
+			this.#checkboxElements[acceptedIndexOneBased - 1].checked = true;
+		}
+	}
+}
+
+class Exam {
+	// Map<id, pos>
+	#ids;
+
+	constructor(ids) {
+		this.#ids = new Map();
+		let position = 1;
+		for (let id of ids) {
+			this.#ids.set(id, position);
+			++position;
+		}
+
+		this.getPositionOf.bind(this);
+		this.getPreviousId.bind(this);
+		this.getNextId.bind(this);
+		this.isFirst.bind(this);
+		this.isLast.bind(this);
+	}
+
+	get size() {
+		return this.#ids.size();
+	}
+
+	getPositionOf(id) {
+		return this.#ids[id];
+	}
+
+	#getId(position) {
+		for (let [k, v] of this.#ids) {
+			if (v === position) {
+				return k;
+			}
+		}
+		throw new Error('Not found ' + position);
+	}
+
+	getPreviousId(id) {
+		const pos = this.getPositionOf(id);
+		if (pos === 1) {
+			return undefined;
+		}
+		return this.#getId(pos - 1);
+	}
+
+	getNextId(id) {
+		const pos = this.getPositionOf(id);
+		if (pos === this.size) {
+			return undefined;
+		}
+		return this.#getId(pos + 1);
+	}
+
+	isFirst(id) {
+		return this.getPositionOf(id) === 1;
+	}
+
+	isLast(id) {
+		return this.getPositionOf(id) === this.size;
+	}
+}
+
+class QuestionInExam {
+	#question;
+	#exam;
+
+	constructor(question, ids) {
+		this.#question = question;
+		this.#exam = new Exam(ids);
+	}
+
+	get position() {
+		return this.#exam.getPositionOf(this.id);
+	}
+
+	get id() {
+		return this.#question.id;
+	}
+
+	get previousId() {
+		return this.#exam.getPreviousId(this.id);
+	}
+
+	get nextId() {
+		return this.#exam.getNextId(this.id);
+	}
+
+	get isFirst() {
+		return this.#exam.isFirst(this.id);
+	}
+
+	get isLast() {
+		return this.#exam.isLast(this.id);
+	}
+
+	markAcceptedClaims(acceptedClaims) {
+		this.#question.markAcceptedClaims(acceptedClaims);
+	}
+}
+
+class Controller {
+	#requester;
+
+	#login;
+	#questionInExam;
+	
 	previousButton;
 	nextButton;
 	endButton;
 	contentsDiv;
-	checkboxElements;
 
 	constructor() {
-		this.login = new LoginController().readLogin();
-		if (this.login === undefined) {
+		this.#requester = new Requester();
+
+		this.#login = new LoginController().readLogin();
+		if (this.#login === undefined) {
 			throw new Error('No login.');
 		}
-		this.requester = new Requester();
-		this.ids = null;
-		this.id = null;
-		this.index = null;
-		this.questionElements = null;
-		this.acceptedClaims = null;
+		this.#questionInExam = undefined;
 
 		this.previousButton = document.getElementById('previous');
 		this.nextButton = document.getElementById('next');
 		this.endButton = document.getElementById('end');
 		this.contentsDiv = document.getElementById('contents');
 
-		this.previousButton.addEventListener('click', e => this.previous.call(this, e));
-		this.nextButton.addEventListener('click', e => this.next.call(this, e));
-		this.endButton.addEventListener('click', e => this.end.call(this, e));
-
-		this.checkboxElements = null;
+		this.previousButton.addEventListener('click', e => this.navigateTo(this.#questionInExam.previousId));
+		this.nextButton.addEventListener('click', e => this.navigateTo(this.#questionInExam.nextId));
+		this.endButton.addEventListener('click', this.end);
 	}
 
-	fetchIds() {
-		this.requester.list(this.login, r => this.listed.call(this, r));
-	}
-
-	listed(response) {
-		response.json().then(l => this.gotIds.call(this, l));
-	}
-
-	gotIds(ids) {
-		console.log('Got ids', ids);
-		this.ids = ids;
-		this.refresh();
-	}
-
-	getIdFromHash() {
-		if (!window.location.hash[0] === '#') {
-			throw new Error('No fragment.');
-		}
-		const requested = window.location.hash.substring(1);
-		if (requested === "") {
-			throw new Error('Empty fragment.');
+	static #getIdFromUrl() {
+		const requested = window.location.search?.substring(1);
+		if (!requested) {
+			throw new Error('No id.');
 		}
 		const id = parseInt(requested, 10);
 		if (Number.isNaN(id)) {
-			throw new Error('Non numeric fragment.');
+			throw new Error('Non numeric id.');
 		}
 		return id;
 	}
 
-	/* If has questionElements already, id must be set to the current one. */
+	/* Reads current id, queries and sets title. */
 	refresh() {
-		console.log('Refreshing, id', this.id, 'ids', this.ids, 'questionElements', this.questionElements, 'acceptedClaims', this.acceptedClaims);
-		if (this.questionElements !== null) {
-			if (this.id === null) {
-				throw new Error("Has ids but no question id.");
-			}
-			if (this.id !== this.getIdFromHash()) {
-				throw new Error("Known id does not match expected id.");
-			}
-		}
+		const id = Controller.#getIdFromUrl();
 
-		if (this.id === null) {
-			this.id = this.getIdFromHash();
-			this.requester.getQuestion(this.login, this.id, r => this.phrased.call(this, r), r => this.adopted.call(this, r));
-		}
-		if (this.ids === null) {
-			this.fetchIds();
-		}
+		window.document.title = `Question ${id}…`;
 
-		if (this.ids !== null && this.id !== null) {
-			if (!this.ids.includes(this.id)) {
-				throw new Error('Unknown id', id);
-			}
-			this.index = this.ids.indexOf(this.id);
-
-			const firstQuestion = this.index === 0;
-			const lastQuestion = this.index === this.ids.length - 1;
-			this.previousButton.hidden = firstQuestion;
-			this.nextButton.hidden = lastQuestion;
-			this.endButton.hidden = !lastQuestion;
+		const promises = new Set();
+		if (this.#ids === undefined) {
+			const promiseIds = this.#requester.list(this.#login);
+			promises.add(promiseIds);
+		} else {
+			promises.add(Promise.resolve(this.#ids));
 		}
-		if (this.questionElements !== null && this.acceptedClaims != null && this.contentsDiv.children.length === 0) {
-			console.log('Appending', this.questionElements);
-			for (let i = 0; i < this.questionElements.length; ++i) {
-				this.contentsDiv.appendChild(this.questionElements[i]);
+		const promiseQuestion = this.#requester.getQuestion(this.#login, id);
+		promises.add(promiseQuestion);
+		Promise.all(promises).then(
+			ar => {
+				const ids = ar[0];
+				if (!ids.includes(id)) {
+					throw new Error('Unknown id', id);
+				}
+				const questionElements = ar[1].questionElements;
+				const acceptedClaims = ar[1].acceptedClaims;
+				const question = new QuestionInExam(new Question(id, questionElements), ids);
+				question.markAcceptedClaims(acceptedClaims);
+				return this.#processQuestion(question);
 			}
 
-			const inputs = Array.from(document.getElementsByTagName('input'));
-			console.log('Inputs found', inputs);
-			this.checkboxElements = inputs.filter(i => i.attributes.getNamedItem('type').value === 'checkbox');
-			console.log('checkboxElements found', this.checkboxElements);
-			this.checkboxElements.forEach(c => c.addEventListener('click', e => this.check.call(this, e)));
-			for (let i = 0; i < this.acceptedClaims.length; ++i) {
-				const acceptedIndexOneBased = this.acceptedClaims[i];
-				this.checkboxElements[acceptedIndexOneBased - 1].checked = true;
-			}
-		}
+		);
+	}
 
-		Document.title = `Question ${this.id}`;
+	#processQuestion(question) {
+		if (this.contentsDiv.children.length !== 0) {
+			throw new Error('Contents non empty.');
+		}
+		
+		this.#questionInExam = question;
+
+		question.checkboxElements.forEach(
+			c => c.addEventListener('click',
+				e => this.requester.answer(this.#login, id, question.acceptedClaims)
+			)
+		);
+
+		this.previousButton.hidden = question.isFirst;
+		this.nextButton.hidden = question.isLast;
+		this.endButton.hidden = !question.isLast;
+
+		question.questionElements.forEach(this.contentsDiv.appendChild);
 	}
 
 	navigateTo(id) {
+		if (!id) {
+			throw new Error('No id.');
+		}
+
 		this.contentsDiv.innerHTML = '';
-		this.id = null;
-		this.index = null;
-		this.questionElements = null;
-		this.acceptedClaims = null;
-
-		console.log('Navigating to', id);
-		window.location.hash = `#${id}`;
+		this.#questionInExam = undefined;
+		
+//		window.location.search = `?${id}`;
+		const newUrl = new URL(window.location.href);
+		newUrl.search = `?${id}`;
+		history.pushState(id, id, newUrl);
 		this.refresh();
 	}
 
-	phrased(response) {
-		console.log('Phrasing answered', response);
-		response.text().then(p => this.gotPhrasing.call(this, p));
-	}
-
-	gotPhrasing(phrasingText) {
-		console.log('Got phrasing', phrasingText);
-		const phrasingDoc = new DOMParser().parseFromString(phrasingText, 'application/xhtml+xml');
-		const body = phrasingDoc.body;
-		console.log('Got body', body);
-		const children = body.children;
-		const sectionChildren = Array.from(children).filter(e => e.tagName === 'section');
-		if (sectionChildren.length != 1) {
-			throw new Error('Unexpected sections inside body in ' + phrasingText);
-		}
-		const sectionElement = sectionChildren[0];
-		const questionElements = Array.from(sectionElement.children);
-		if (questionElements.length === 0) {
-			throw new Error('No content');
-		}
-		this.questionElements = questionElements;
-		this.refresh();
-	}
-
-	check(event) {
-		this.requester.answer(this.login, this.id, this.getChecked(), r => this.answered.call(this, r));
-	}
-	
-	answered(response) {
-		console.log('Registered answer.', response);
-	}
-
-	adopted(response) {
-		console.log('Answered', response);
-		if (response.status === 200) {
-			response.json().then(p => this.gotAcceptedClaims.call(this, p));
-		} else {
-			this.gotAcceptedClaims(new Array());
-		}
-	}
-
-	gotAcceptedClaims(acceptedClaims) {
-		this.acceptedClaims = acceptedClaims;
-		this.refresh();
-	}
-
-	getChecked() {
-		return this.checkboxElements.filter(c => c.checked).map(c => c.id).map(this.claimIdToInt);
-	}
-
-	claimIdToInt(claimId) {
+	static #claimIdToInt(claimId) {
 		if (claimId.substring(0, 6) !== 'claim-') {
 			throw new Error('Unknown claim id', claimId);
 		}
@@ -197,39 +262,6 @@ class Controller {
 			throw new Error('Non numeric claim id.');
 		}
 		return id;
-	}
-
-	previous(event) {
-		if (this.index === null) {
-			throw new Error('No index yet.');
-		}
-		if (this.index === 0) {
-			throw new Error('No previous question.');
-		}
-
-		this.navigateTo(this.ids[this.index - 1]);
-	}
-
-	next(event) {
-		if (this.index === null) {
-			throw new Error('No index yet.');
-		}
-		if (this.index === this.ids.length - 1) {
-			throw new Error('No next question.');
-		}
-
-		this.navigateTo(this.ids[this.index + 1]);
-	}
-
-	end(event) {
-		if (this.index === null) {
-			throw new Error('No index yet.');
-		}
-		if (this.index !== this.ids.length - 1) {
-			throw new Error('Not at end of questions.');
-		}
-
-		window.location.href = 'end.html';
 	}
 }
 
