@@ -35,7 +35,7 @@ class Question {
 
 	static #claimIdToInt(claimId) {
 		if (claimId.substring(0, 6) !== 'claim-') {
-			throw new Error('Unknown claim id', claimId);
+			throw new Error(`Unknown claim id: ${claimId}.`);
 		}
 		const idString = claimId.substring(6);
 		const id = parseInt(idString, 10);
@@ -82,7 +82,7 @@ class Exam {
 
 	getPositionOf(id) {
 		if(!this.#idsMap.has(id)) {
-			throw new Error('No such id: ' + id);
+			throw new Error(`No such id: ${id}.`);
 		}
 		return this.#idsMap[id];
 	}
@@ -93,11 +93,14 @@ class Exam {
 				return k;
 			}
 		}
-		throw new Error('Not found ' + position);
+		throw new Error(`Not found ${position}.`);
 	}
 
 	getPreviousId(id) {
 		const pos = this.getPositionOf(id);
+		if (!pos) {
+			throw new Error(`Unknown id: ${id}, type ${typeof id}.`);
+		}
 		if (pos === 1) {
 			return undefined;
 		}
@@ -236,7 +239,7 @@ class Controller {
 			ar => {
 				const ids = ar[0];
 				if (!ids.includes(id)) {
-					throw new Error('Unknown id', id);
+					throw new Error(`Unknown id: ${id}.`);
 				}
 				const questionElements = ar[1].questionElements;
 				const acceptedClaims = ar[1].acceptedClaims;
