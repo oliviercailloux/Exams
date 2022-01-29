@@ -222,7 +222,7 @@ class Controller {
 
 		question.checkboxElements.forEach(
 			c => c.addEventListener('click',
-				e => this.requester.answer(this.#login, id, question.acceptedClaims)
+				_e => this.requester.answer(this.#login, id, question.acceptedClaims)
 			)
 		);
 
