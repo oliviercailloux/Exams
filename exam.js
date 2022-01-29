@@ -1,5 +1,5 @@
-import verify from './modules/utils.mjs';
-import Requester from './modules/requester.mjs';
+import { verify } from './modules/utils.mjs';
+import { Requester } from './modules/requester.mjs';
 import { Login, LoginController } from './modules/login.mjs';
 
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
@@ -33,8 +33,20 @@ class Question {
 		return this.#checkboxElements;
 	}
 
+	static #claimIdToInt(claimId) {
+		if (claimId.substring(0, 6) !== 'claim-') {
+			throw new Error('Unknown claim id', claimId);
+		}
+		const idString = claimId.substring(6);
+		const id = parseInt(idString, 10);
+		if (Number.isNaN(id)) {
+			throw new Error('Non numeric claim id.');
+		}
+		return id;
+	}
+
 	get acceptedClaims() {
-		const arrayInts = this.#checkboxElements.filter(c => c.checked).map(c => c.id).map(this.#claimIdToInt);
+		const arrayInts = this.#checkboxElements.filter(c => c.checked).map(c => c.id).map(Question.#claimIdToInt);
 		return new Set(arrayInts);
 	}
 
@@ -47,13 +59,13 @@ class Question {
 
 class Exam {
 	// Map<id, pos>
-	#ids;
+	#idsMap;
 
-	constructor(ids) {
-		this.#ids = new Map();
+	constructor(idsS) {
+		this.#idsMap = new Map();
 		let position = 1;
-		for (let id of ids) {
-			this.#ids.set(id, position);
+		for (let id of idsS) {
+			this.#idsMap.set(id, position);
 			++position;
 		}
 
@@ -65,15 +77,15 @@ class Exam {
 	}
 
 	get size() {
-		return this.#ids.size();
+		return this.#idsMap.size();
 	}
 
 	getPositionOf(id) {
-		return this.#ids[id];
+		return this.#idsMap[id];
 	}
 
 	#getId(position) {
-		for (let [k, v] of this.#ids) {
+		for (let [k, v] of this.#idsMap) {
 			if (v === position) {
 				return k;
 			}
@@ -103,6 +115,14 @@ class Exam {
 
 	isLast(id) {
 		return this.getPositionOf(id) === this.size;
+	}
+
+	get ids() {
+		const ids = new Set();
+		for (let id of this.#idsMap.keys()) {
+			ids.add(id);
+		}
+		return ids;
 	}
 }
 
@@ -142,6 +162,10 @@ class QuestionInExam {
 	markAcceptedClaims(acceptedClaims) {
 		this.#question.markAcceptedClaims(acceptedClaims);
 	}
+
+	get ids() {
+		return this.#exam.ids;
+	}
 }
 
 class Controller {
@@ -149,7 +173,7 @@ class Controller {
 
 	#login;
 	#questionInExam;
-	
+
 	#previousAnchor;
 	#nextAnchor;
 	#endAnchor;
@@ -188,12 +212,13 @@ class Controller {
 
 		window.document.title = `Question ${id}…`;
 
+		const ids = this.#questionInExam?.ids;
 		const promises = new Set();
-		if (this.#ids === undefined) {
+		if (ids === undefined) {
 			const promiseIds = this.#requester.list(this.#login);
 			promises.add(promiseIds);
 		} else {
-			promises.add(Promise.resolve(this.#ids));
+			promises.add(Promise.resolve(ids));
 		}
 		const promiseQuestion = this.#requester.getQuestion(this.#login, id);
 		promises.add(promiseQuestion);
@@ -217,7 +242,7 @@ class Controller {
 		if (this.#contentsDiv.children.length !== 0) {
 			throw new Error('Contents non empty.');
 		}
-		
+
 		this.#questionInExam = question;
 
 		question.checkboxElements.forEach(
@@ -234,13 +259,13 @@ class Controller {
 
 		question.questionElements.forEach(this.#contentsDiv.appendChild);
 	}
-	
+
 	static #getUrlOfId(id) {
 		const newUrl = new URL(window.location.href);
 		newUrl.search = `?${id}`;
 		return newUrl;
 	}
-		
+
 	navigateTo(id) {
 		if (!id) {
 			throw new Error('No id.');
@@ -248,21 +273,9 @@ class Controller {
 
 		this.#contentsDiv.innerHTML = '';
 		this.#questionInExam = undefined;
-		
+
 		history.pushState(id, id, Controller.#getUrlOfId(id));
 		this.refresh();
-	}
-
-	static #claimIdToInt(claimId) {
-		if (claimId.substring(0, 6) !== 'claim-') {
-			throw new Error('Unknown claim id', claimId);
-		}
-		const idString = claimId.substring(6);
-		const id = parseInt(idString, 10);
-		if (Number.isNaN(id)) {
-			throw new Error('Non numeric claim id.');
-		}
-		return id;
 	}
 }
 

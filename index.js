@@ -20,27 +20,22 @@ class Controller {
 		this.#requester = new Requester();
 		
 		this.refresh = this.refresh.bind(this);
-		this.#start = this.#start.bind(this);
-		this.#gotPassword = this.#gotPassword.bind(this);
-		this.#gotList = this.#gotList.bind(this);
-		this.#navigate = this.#navigate.bind(this);
-		this.#resetLogin = this.#resetLogin.bind(this);
 		
 		this.#nameElement = document.getElementById('name');
 		this.#startButton = document.getElementById('start');
-		this.#startButton.addEventListener('click', this.start);
+		this.#startButton.addEventListener('click', this.#start.bind(this));
 	}
 
 	refresh() {
 		this.#login = this.#loginController.readLogin();
 
 		if (this.#login !== undefined) {
-			this.#requester.list(this.#login, this.#gotList);
+			this.#requester.list(this.#login).then(this.#gotList.bind(this));
 		}
 	}
 
 	#start(event) {
-		this.#requester.connect(this.#nameElement.value).then(this.#gotPassword);
+		this.#requester.connect(this.#nameElement.value).then(this.#gotPassword.bind(this));
 	}
 
 	#gotPassword(password) {
@@ -55,7 +50,7 @@ class Controller {
 	}
 
 	#navigate(id) {
-		const target = `exam.html#${id}`;
+		const target = `exam.html?${id}`;
 		console.log('Navigating to', target);
 		window.location.href = target;
 	}

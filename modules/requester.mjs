@@ -45,8 +45,8 @@ export class Requester {
 
 	static #getErrorHandlerExpecting(expectedStatus, requestName) {
 		return function handle(response) {
-			console.log('Handling', response);
-			if (response.status !== expectedStatus) {
+			const expectedStatuses = (expectedStatus instanceof Set) ? expectedStatus : new Set().add(expectedStatus);
+			if (!expectedStatuses.has(response.status)) {
 				throw new Error('Unexpected response status to ' + requestName + ': ' + response.status);
 			}
 			return response;
@@ -88,7 +88,7 @@ export class Requester {
 		{
 			const init = Requester.#getFetchInit('GET', login);
 			init.headers.set('Accept', 'application/json');
-			const errorHandler = Requester.#getErrorHandlerExpecting(200, 'phrasing');
+			const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 204]), 'acceptedClaims');
 			const promiseAcceptedClaims = fetch(`${this.#url}exam/answer/${id}`, init)
 				.then(errorHandler)
 				.then(r => r.json());
@@ -121,7 +121,7 @@ export class Requester {
 		init.body = JSON.stringify(acceptedClaimsIds);
 		init.headers.set('content-type', 'application/json');
 
-		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'acceptClaims');
+		const errorHandler = Requester.#getErrorHandlerExpecting(204, 'acceptClaims');
 		return fetch(`${this.#url}exam/answer/${questionId}`, init).then(errorHandler);
 	}
 }
