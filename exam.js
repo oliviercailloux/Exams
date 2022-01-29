@@ -174,6 +174,7 @@ class Controller {
 	#login;
 	#questionInExam;
 
+	#titleElement;
 	#previousAnchor;
 	#nextAnchor;
 	#endAnchor;
@@ -188,6 +189,7 @@ class Controller {
 		}
 		this.#questionInExam = undefined;
 
+		this.#titleElement = document.getElementById('title');
 		this.#previousAnchor = document.getElementById('previous');
 		this.#nextAnchor = document.getElementById('next');
 		this.#endAnchor = document.getElementById('end');
@@ -205,12 +207,17 @@ class Controller {
 		}
 		return id;
 	}
-
+	
+	#setTitle(title) {
+		window.document.title = title;
+		this.#titleElement.innerHTML = title;
+	}
+	
 	/* Reads current id, queries and sets title. */
 	refresh() {
 		const id = Controller.#getIdFromUrl();
 
-		window.document.title = `Question ${id}…`;
+		this.#setTitle(`Question ${id} (loading…)`);
 
 		const ids = this.#questionInExam?.ids;
 		const promises = new Set();
@@ -256,7 +263,8 @@ class Controller {
 		this.#previousAnchor.hidden = question.isFirst;
 		this.#nextAnchor.hidden = question.isLast;
 		this.#endAnchor.hidden = !question.isLast;
-
+	
+		this.#setTitle(`Question ${question.id}`);
 		question.questionElements.forEach(this.#contentsDiv.appendChild);
 	}
 
