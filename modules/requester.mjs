@@ -91,7 +91,7 @@ export class Requester {
 			const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 204]), 'acceptedClaims');
 			const promiseAcceptedClaims = fetch(`${this.#url}exam/answer/${id}`, init)
 				.then(errorHandler)
-				.then(r => r.json());
+				.then(r => r.status === 200 ? r.json() : []);
 			promises.add(promiseAcceptedClaims);
 		}
 
