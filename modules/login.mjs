@@ -51,7 +51,6 @@ export class Login {
 			result += String.fromCharCode(utf8[i]);
 		}
 		const encoded = window.btoa(result);
-		console.log(`Encoded ${input} to ${encoded}.`);
 		return encoded;
 	}
 
