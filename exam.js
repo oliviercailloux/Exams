@@ -223,7 +223,7 @@ class Controller {
 	refresh() {
 		const id = Controller.#getIdFromUrl();
 
-		this.#setTitle(`Question ${id} (loading…)`);
+		this.#setTitle(`Question … (loading)`);
 
 		const ids = this.#questionInExam?.ids;
 		const promises = new Set();
@@ -270,7 +270,7 @@ class Controller {
 		this.#nextAnchor.hidden = questionInExam.isLast;
 		this.#endAnchor.hidden = !questionInExam.isLast;
 	
-		this.#setTitle(`Question ${questionInExam.question.id}`);
+		this.#setTitle(`Question ${questionInExam.position} / ${questionInExam.ids.size}`);
 		questionInExam.question.elements.forEach(e => this.#contentsDiv.appendChild(e));
 	}
 
