@@ -150,10 +150,10 @@ class Controller {
 	#login;
 	#questionInExam;
 	
-	previousButton;
-	nextButton;
-	endButton;
-	contentsDiv;
+	#previousAnchor;
+	#nextAnchor;
+	#endAnchor;
+	#contentsDiv;
 
 	constructor() {
 		this.#requester = new Requester();
@@ -164,14 +164,10 @@ class Controller {
 		}
 		this.#questionInExam = undefined;
 
-		this.previousButton = document.getElementById('previous');
-		this.nextButton = document.getElementById('next');
-		this.endButton = document.getElementById('end');
-		this.contentsDiv = document.getElementById('contents');
-
-		this.previousButton.addEventListener('click', e => this.navigateTo(this.#questionInExam.previousId));
-		this.nextButton.addEventListener('click', e => this.navigateTo(this.#questionInExam.nextId));
-		this.endButton.addEventListener('click', this.end);
+		this.#previousAnchor = document.getElementById('previous');
+		this.#nextAnchor = document.getElementById('next');
+		this.#endAnchor = document.getElementById('end');
+		this.#contentsDiv = document.getElementById('contents');
 	}
 
 	static #getIdFromUrl() {
@@ -218,7 +214,7 @@ class Controller {
 	}
 
 	#processQuestion(question) {
-		if (this.contentsDiv.children.length !== 0) {
+		if (this.#contentsDiv.children.length !== 0) {
 			throw new Error('Contents non empty.');
 		}
 		
@@ -230,25 +226,30 @@ class Controller {
 			)
 		);
 
-		this.previousButton.hidden = question.isFirst;
-		this.nextButton.hidden = question.isLast;
-		this.endButton.hidden = !question.isLast;
+		this.#previousAnchor.href = Controller.#getUrlOfId(question.previousId || '');
+		this.#nextAnchor.href = Controller.#getUrlOfId(question.nextId || '');
+		this.#previousAnchor.hidden = question.isFirst;
+		this.#nextAnchor.hidden = question.isLast;
+		this.#endAnchor.hidden = !question.isLast;
 
-		question.questionElements.forEach(this.contentsDiv.appendChild);
+		question.questionElements.forEach(this.#contentsDiv.appendChild);
 	}
-
+	
+	static #getUrlOfId(id) {
+		const newUrl = new URL(window.location.href);
+		newUrl.search = `?${id}`;
+		return newUrl;
+	}
+		
 	navigateTo(id) {
 		if (!id) {
 			throw new Error('No id.');
 		}
 
-		this.contentsDiv.innerHTML = '';
+		this.#contentsDiv.innerHTML = '';
 		this.#questionInExam = undefined;
 		
-//		window.location.search = `?${id}`;
-		const newUrl = new URL(window.location.href);
-		newUrl.search = `?${id}`;
-		history.pushState(id, id, newUrl);
+		history.pushState(id, id, Controller.#getUrlOfId(id));
 		this.refresh();
 	}
 
