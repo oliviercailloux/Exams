@@ -81,6 +81,9 @@ class Exam {
 	}
 
 	getPositionOf(id) {
+		if(!this.#idsMap.has(id)) {
+			throw new Error('No such id: ' + id);
+		}
 		return this.#idsMap[id];
 	}
 
@@ -136,27 +139,27 @@ class QuestionInExam {
 	}
 
 	get position() {
-		return this.#exam.getPositionOf(this.id);
+		return this.#exam.getPositionOf(this.#question.id);
 	}
 
-	get id() {
-		return this.#question.id;
+	get question() {
+		return this.#question;
 	}
 
 	get previousId() {
-		return this.#exam.getPreviousId(this.id);
+		return this.#exam.getPreviousId(this.#question.id);
 	}
 
 	get nextId() {
-		return this.#exam.getNextId(this.id);
+		return this.#exam.getNextId(this.#question.id);
 	}
 
 	get isFirst() {
-		return this.#exam.isFirst(this.id);
+		return this.#exam.isFirst(this.#question.id);
 	}
 
 	get isLast() {
-		return this.#exam.isLast(this.id);
+		return this.#exam.isLast(this.#question.id);
 	}
 
 	markAcceptedClaims(acceptedClaims) {
@@ -245,27 +248,27 @@ class Controller {
 		);
 	}
 
-	#processQuestion(question) {
+	#processQuestion(questionInExam) {
 		if (this.#contentsDiv.children.length !== 0) {
 			throw new Error('Contents non empty.');
 		}
 
-		this.#questionInExam = question;
+		this.#questionInExam = questionInExam;
 
-		question.checkboxElements.forEach(
+		questionInExam.question.checkboxElements.forEach(
 			c => c.addEventListener('click',
-				_e => this.requester.answer(this.#login, id, question.acceptedClaims)
+				_e => this.requester.answer(this.#login, id, questionInExam.question.acceptedClaims)
 			)
 		);
 
-		this.#previousAnchor.href = Controller.#getUrlOfId(question.previousId || '');
-		this.#nextAnchor.href = Controller.#getUrlOfId(question.nextId || '');
-		this.#previousAnchor.hidden = question.isFirst;
-		this.#nextAnchor.hidden = question.isLast;
-		this.#endAnchor.hidden = !question.isLast;
+		this.#previousAnchor.href = Controller.#getUrlOfId(questionInExam.previousId || '');
+		this.#nextAnchor.href = Controller.#getUrlOfId(questionInExam.nextId || '');
+		this.#previousAnchor.hidden = questionInExam.isFirst;
+		this.#nextAnchor.hidden = questionInExam.isLast;
+		this.#endAnchor.hidden = !questionInExam.isLast;
 	
-		this.#setTitle(`Question ${question.id}`);
-		question.questionElements.forEach(this.#contentsDiv.appendChild);
+		this.#setTitle(`Question ${questionInExam.question.id}`);
+		questionInExam.question.questionElements.forEach(this.#contentsDiv.appendChild);
 	}
 
 	static #getUrlOfId(id) {
