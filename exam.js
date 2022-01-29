@@ -77,14 +77,14 @@ class Exam {
 	}
 
 	get size() {
-		return this.#idsMap.size();
+		return this.#idsMap.size;
 	}
 
 	getPositionOf(id) {
 		if(!this.#idsMap.has(id)) {
 			throw new Error(`No such id: ${id}.`);
 		}
-		return this.#idsMap[id];
+		return this.#idsMap.get(id);
 	}
 
 	#getId(position) {
@@ -99,7 +99,7 @@ class Exam {
 	getPreviousId(id) {
 		const pos = this.getPositionOf(id);
 		if (!pos) {
-			throw new Error(`Unknown id: ${id}, type ${typeof id}.`);
+			throw new Error(`Unknown id: ${id}, type ${typeof id}, got ${pos}.`);
 		}
 		if (pos === 1) {
 			return undefined;
@@ -271,7 +271,7 @@ class Controller {
 		this.#endAnchor.hidden = !questionInExam.isLast;
 	
 		this.#setTitle(`Question ${questionInExam.question.id}`);
-		questionInExam.question.questionElements.forEach(this.#contentsDiv.appendChild);
+		questionInExam.question.elements.forEach(e => this.#contentsDiv.appendChild(e));
 	}
 
 	static #getUrlOfId(id) {
