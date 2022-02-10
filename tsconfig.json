@@ -1,12 +1,8 @@
 {
-  "COMMENTEDcompilerOptions": {
-    "module": "system",
-    "noImplicitAny": true,
-    "removeComments": true,
-    "preserveConstEnums": true,
-    "outFile": "../../built/local/tsc.js",
-    "sourceMap": true
+  "compilerOptions": {
+    "outDir": "docs/"
   },
-  "include": ["modules/**/*"]
+  "include": ["modules/**/*"],
+  "extends": "@tsconfig/recommended/tsconfig.json"
 }
 

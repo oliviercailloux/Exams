@@ -2,7 +2,7 @@ export class Login {
 	#username;
 	#password;
 
-	constructor(username, password) {
+	constructor(username: string, password: string) {
 		if (username == null || password == null)
 			throw new Error("Bad login use.");
 
@@ -16,7 +16,7 @@ export class Login {
 	 * @return {!Array<number>} UTF-8 byte array.
 	 * From https://github.com/google/closure-library/blob/master/closure/goog/crypt/crypt.js#L114
 	 */
-	#stringToUtf8ByteArray(str) {
+	#stringToUtf8ByteArray(str: string) {
 		let out = [], p = 0;
 		for (let i = 0; i < str.length; i++) {
 			let c = str.charCodeAt(i);
@@ -44,7 +44,7 @@ export class Login {
 	};
 
 	/** I convert to UTF-8 because it seems much more prevalent (https://en.wikipedia.org/wiki/Popularity_of_text_encodings). Code taken from https://stackoverflow.com/a/9458996. */
-	#stringToUtf8ToBase64(input) {
+	#stringToUtf8ToBase64(input: string) {
 		const utf8 = this.#stringToUtf8ByteArray(input);
 		let result = '';
 		for (let i = 0; i < utf8.length; i++) {
@@ -79,7 +79,7 @@ export class LoginController {
 	}
 
 	readLogin() {
-		const username = this.#localStorage.getItem('username');
+		const username:string = this.#localStorage.getItem('username');
 		const password = this.#localStorage.getItem('password');
 		const hasUsername = username != null;
 		const hasPassword = password != null;
