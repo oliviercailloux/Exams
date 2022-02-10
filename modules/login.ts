@@ -3,17 +3,14 @@ export class Login {
 	#password;
 
 	constructor(username: string, password: string) {
-		if (username == null || password == null)
-			throw new Error("Bad login use.");
-
 		this.#username = username;
 		this.#password = password;
 	}
 
 	/**
 	 * Converts a JS string to a UTF-8 "byte" array.
-	 * @param {string} str 16-bit unicode string.
-	 * @return {!Array<number>} UTF-8 byte array.
+	 * @param str 16-bit unicode string.
+	 * @return UTF-8 byte array.
 	 * From https://github.com/google/closure-library/blob/master/closure/goog/crypt/crypt.js#L114
 	 */
 	#stringToUtf8ByteArray(str: string) {
@@ -79,7 +76,7 @@ export class LoginController {
 	}
 
 	readLogin() {
-		const username:string = this.#localStorage.getItem('username');
+		const username = this.#localStorage.getItem('username');
 		const password = this.#localStorage.getItem('password');
 		const hasUsername = username != null;
 		const hasPassword = password != null;
@@ -89,14 +86,10 @@ export class LoginController {
 		if (!hasUsername) {
 			return undefined;
 		}
-		return new Login(username, password);
+		return new Login(username, password!);
 	}
 
-	write(login) {
-		if (login == null) {
-			throw new Error('Unknown login, can’t write.');
-		}
-
+	write(login: Login) {
 		this.#localStorage.setItem('username', login.username);
 		this.#localStorage.setItem('password', login.password);
 	}
