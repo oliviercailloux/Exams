@@ -178,7 +178,7 @@ class Controller {
 	#requester;
 
 	#login;
-	#questionInExam;
+	#ids;
 
 	#titleElement;
 	#previousAnchor;
@@ -193,7 +193,7 @@ class Controller {
 		if (this.#login === undefined) {
 			throw new Error('No login.');
 		}
-		this.#questionInExam = undefined;
+		this.#ids = undefined;
 
 		this.#titleElement = document.getElementById('title');
 		this.#previousAnchor = document.getElementById('previous');
@@ -223,15 +223,15 @@ class Controller {
 	refresh() {
 		const id = Controller.#getIdFromUrl();
 
-		this.#setTitle(`Question … (loading)`);
+		const overNb = this.#ids === undefined ? '…' : `… / ${this.#ids.size}`;
+		this.#setTitle(`Question ${overNb} (loading)`);
 
-		const ids = this.#questionInExam?.ids;
 		const promises = new Set();
-		if (ids === undefined) {
+		if (this.#ids === undefined) {
 			const promiseIds = this.#requester.list(this.#login);
 			promises.add(promiseIds);
 		} else {
-			promises.add(Promise.resolve(ids));
+			promises.add(Promise.resolve(this.#ids));
 		}
 		const promiseQuestion = this.#requester.getQuestion(this.#login, id);
 		promises.add(promiseQuestion);
@@ -256,7 +256,7 @@ class Controller {
 			throw new Error('Contents non empty.');
 		}
 
-		this.#questionInExam = questionInExam;
+		this.#ids = questionInExam.ids;
 
 		questionInExam.question.checkboxElements.forEach(
 			c => c.addEventListener('click',
@@ -286,7 +286,6 @@ class Controller {
 		}
 
 		this.#contentsDiv.innerHTML = '';
-		this.#questionInExam = undefined;
 
 		history.pushState(id, id, Controller.#getUrlOfId(id));
 		this.refresh();
