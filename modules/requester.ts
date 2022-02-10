@@ -1,4 +1,10 @@
-import { Login } from './login.mjs';
+import { Login } from './login';
+
+interface PostInit {
+	headers: Headers,
+	method: 'GET' | 'POST' | 'PUT',
+	body: string
+}
 
 export class Requester {
 	#url;
@@ -10,7 +16,7 @@ export class Requester {
 			// [::1] is the IPv6 localhost address.
 			window.location.hostname === '[::1]' ||
 			// 127.0.0.1/8 is considered localhost for IPv4.
-			window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+			(window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/) !== null)
 			;
 		if (isLocalhost) {
 			this.#url = `http://${window.location.hostname}:8080/v0/`;
@@ -26,12 +32,11 @@ export class Requester {
 		this.acceptClaims.bind(this);
 	}
 
-	static #getFetchInit(method = 'GET', login = undefined) {
+	static #getFetchInit(method: 'GET' | 'POST' | 'PUT' = 'GET', login?: Login) {
 		let headers = new Headers();
 		const init = {
 			headers: headers,
-			method: method,
-			body: undefined
+			method: method
 		};
 
 		if (login !== undefined) {
@@ -43,27 +48,29 @@ export class Requester {
 		return init;
 	}
 
-	static #getErrorHandlerExpecting(expectedStatus, requestName) {
-		return function handle(response) {
+	static #getErrorHandlerExpecting(expectedStatus: Set<number> | number, requestName: string) {
+		return function handle(response: Response) {
 			const expectedStatuses = (expectedStatus instanceof Set) ? expectedStatus : new Set().add(expectedStatus);
 			if (!expectedStatuses.has(response.status)) {
-				throw new Error('Unexpected response status to ' + requestName + ': ' + response.status);
+				throw new Error(`Unexpected response status to ${requestName}: ${response.status}`);
 			}
 			return response;
 		};
 	}
 
-	connect(username) {
-		const init = Requester.#getFetchInit('POST');
-		init.headers.set('Accept', 'text/plain');
-		init.body = username;
-		init.headers.set('content-type', 'text/plain');
-
+	connect(username: string) {
+		const initial = Requester.#getFetchInit('POST');
+		initial.headers.set('Accept', 'text/plain');
+		initial.headers.set('content-type', 'text/plain');
+		const init: PostInit = {
+			...initial,
+			body: username
+		}
 		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'connect');
 		return fetch(`${this.#url}exam/connect`, init).then(errorHandler).then(r => r.text());
 	}
 
-	list(login) {
+	list(login: Login) {
 		const init = Requester.#getFetchInit('GET', login);
 		init.headers.set('Accept', 'application/json');
 
@@ -71,7 +78,7 @@ export class Requester {
 		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json());
 	}
 
-	getQuestion(login, id) {
+	getQuestion(login: Login, id: number) {
 		const promises = new Set();
 		{
 			const init = Requester.#getFetchInit('GET', login);
@@ -101,12 +108,12 @@ export class Requester {
 		}));
 	}
 
-	#getQuestionElements(phrasingDom) {
+	#getQuestionElements(phrasingDom: Document) {
 		const body = phrasingDom.body;
 		const children = body.children;
 		const sectionChildren = Array.from(children).filter(e => e.tagName === 'section');
 		if (sectionChildren.length != 1) {
-			throw new Error('Unexpected sections inside body in ' + phrasingDom);
+			throw new Error(`Unexpected sections inside body in ${phrasingDom}`);
 		}
 		const sectionElement = sectionChildren[0];
 		const questionElements = Array.from(sectionElement.children);
@@ -116,10 +123,15 @@ export class Requester {
 		return questionElements;
 	}
 
-	acceptClaims(login, questionId, acceptedClaimsIds) {
-		const init = Requester.#getFetchInit('POST', login);
-		init.body = JSON.stringify(acceptedClaimsIds);
-		init.headers.set('content-type', 'application/json');
+	acceptClaims(login: Login, questionId: number, acceptedClaimsIds: Set<number>) {
+		const initial = Requester.#getFetchInit('POST', login);
+		initial.headers.set('Accept', 'text/plain');
+		initial.headers.set('content-type', 'text/plain');
+		initial.headers.set('content-type', 'application/json');
+		const init: PostInit = {
+			...initial,
+			body: JSON.stringify(acceptedClaimsIds)
+		}
 
 		const errorHandler = Requester.#getErrorHandlerExpecting(204, 'acceptClaims');
 		return fetch(`${this.#url}exam/answer/${questionId}`, init).then(errorHandler);
