@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": "docs/"
+    "outDir": "docs/",
+    "composite": true
   },
-  "include": ["modules/**/*"],
+  "include": ["**/*"],
   "extends": "@tsconfig/recommended/tsconfig.json"
 }
 
