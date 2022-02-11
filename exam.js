@@ -1,6 +1,6 @@
-import { verify } from './modules/utils.mjs';
-import { Requester } from './modules/requester.mjs';
-import { Login, LoginController } from './modules/login.mjs';
+import { verify } from './modules/utils.js';
+import { Requester } from './modules/requester.js';
+import { Login, LoginController } from './modules/login.js';
 
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 	throw new Error('Protocol should be https.');
