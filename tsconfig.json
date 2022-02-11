@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "outDir": "docs/",
     "composite": true
   },
   "include": ["**/*"],
