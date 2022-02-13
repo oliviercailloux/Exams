@@ -6,12 +6,12 @@ if (window.location.protocol !== 'https:' && location.hostname !== "localhost" &
 }
 
 class Controller {
-	#loginController;
-	#login;
-	#requester;
+	#loginController: LoginController;
+	#login: Login | undefined;
+	#requester: Requester;
 
-	#nameElement;
-	#startButton;
+	#nameElement: HTMLTextAreaElement;
+	#startButton: HTMLButtonElement;
 
 	constructor() {
 		console.log('Building controller.');
@@ -21,8 +21,8 @@ class Controller {
 		
 		this.refresh = this.refresh.bind(this);
 		
-		this.#nameElement = document.getElementById('name');
-		this.#startButton = document.getElementById('start');
+		this.#nameElement = document.getElementById('name') as HTMLTextAreaElement;
+		this.#startButton = document.getElementById('start') as HTMLButtonElement;
 		this.#startButton.addEventListener('click', this.#start.bind(this));
 	}
 
@@ -34,22 +34,22 @@ class Controller {
 		}
 	}
 
-	#start(event) {
-		this.#requester.connect(this.#nameElement.value).then(this.#gotPassword.bind(this));
+	#start(_event: Event) {
+		this.#requester.register(this.#nameElement.value, "").then(this.#gotPersonalExamPassword.bind(this));
 	}
 
-	#gotPassword(password) {
-		const login = new Login(this.#nameElement.value, password);
+	#gotPersonalExamPassword(personalExamPassword: string) {
+		const login = new Login(this.#nameElement.value, personalExamPassword);
 		this.#loginController.write(login);
 		this.refresh();
 	}
 
-	#gotList(list) {
+	#gotList(list: number[]) {
 		console.log('Got list', list);
 		this.#navigate(list[0]);
 	}
 
-	#navigate(id) {
+	#navigate(id: number) {
 		const target = `exam.html?${id}`;
 		console.log('Navigating to', target);
 		window.location.href = target;
