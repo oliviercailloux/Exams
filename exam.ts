@@ -1,6 +1,6 @@
-import { verify } from './modules/utils.js';
-import { Requester } from './modules/requester.js';
-import { Login, LoginController } from './modules/login.js';
+import { verify, checkDefined, asAnchor } from './modules/utils';
+import { Requester } from './modules/requester';
+import { Login, LoginController } from './modules/login';
 
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 	throw new Error('Protocol should be https.');
@@ -11,14 +11,15 @@ class Question {
 	#elements;
 	#checkboxElements;
 
-	constructor(id, elements) {
+	constructor(id: number, elements: Iterable<Element>) {
 		verify(id >= 0);
 
 		this.#id = id;
-		this.#elements = elements;
+		this.#elements = Array.from(elements);
 
 		const inputs = Array.from(document.getElementsByTagName('input'));
-		this.#checkboxElements = inputs.filter(i => i.attributes.getNamedItem('type').value === 'checkbox');
+		/*		this.#checkboxElements = inputs.filter(i => i.attributes.getNamedItem('type').value === 'checkbox');*/
+		this.#checkboxElements = inputs.filter(i => i.type === 'checkbox');
 	}
 
 	get id() {
@@ -33,7 +34,7 @@ class Question {
 		return this.#checkboxElements;
 	}
 
-	static #claimIdToInt(claimId) {
+	static #claimIdToInt(claimId: string) {
 		if (claimId.substring(0, 6) !== 'claim-') {
 			throw new Error(`Unknown claim id: ${claimId}.`);
 		}
@@ -50,7 +51,7 @@ class Question {
 		return new Set(arrayInts);
 	}
 
-	markAcceptedClaims(acceptedClaims) {
+	markAcceptedClaims(acceptedClaims: Set<number>) {
 		for (let acceptedIndexOneBased of acceptedClaims) {
 			this.#checkboxElements[acceptedIndexOneBased - 1].checked = true;
 		}
@@ -59,9 +60,9 @@ class Question {
 
 class Exam {
 	// Map<id, pos>
-	#idsMap;
+	#idsMap: Map<number, number>;
 
-	constructor(idsS) {
+	constructor(idsS: Set<number>) {
 		this.#idsMap = new Map();
 		let position = 1;
 		for (let id of idsS) {
@@ -80,14 +81,15 @@ class Exam {
 		return this.#idsMap.size;
 	}
 
-	getPositionOf(id) {
-		if(!this.#idsMap.has(id)) {
+	getPositionOf(id: number) {
+		const pos = this.#idsMap.get(id);
+		if (pos === undefined) {
 			throw new Error(`No such id: ${id}.`);
 		}
-		return this.#idsMap.get(id);
+		return pos;
 	}
 
-	#getId(position) {
+	#getId(position: number) {
 		for (let [k, v] of this.#idsMap) {
 			if (v === position) {
 				return k;
@@ -96,7 +98,7 @@ class Exam {
 		throw new Error(`Not found ${position}.`);
 	}
 
-	getPreviousId(id) {
+	getPreviousId(id: number) {
 		const pos = this.getPositionOf(id);
 		if (!pos) {
 			throw new Error(`Unknown id: ${id}, type ${typeof id}, got ${pos}.`);
@@ -107,7 +109,7 @@ class Exam {
 		return this.#getId(pos - 1);
 	}
 
-	getNextId(id) {
+	getNextId(id: number) {
 		const pos = this.getPositionOf(id);
 		if (pos === this.size) {
 			return undefined;
@@ -115,16 +117,16 @@ class Exam {
 		return this.#getId(pos + 1);
 	}
 
-	isFirst(id) {
+	isFirst(id: number) {
 		return this.getPositionOf(id) === 1;
 	}
 
-	isLast(id) {
+	isLast(id: number) {
 		return this.getPositionOf(id) === this.size;
 	}
 
 	get ids() {
-		const ids = new Set();
+		const ids: Set<number> = new Set();
 		for (let id of this.#idsMap.keys()) {
 			ids.add(id);
 		}
@@ -136,7 +138,7 @@ class QuestionInExam {
 	#question;
 	#exam;
 
-	constructor(question, ids) {
+	constructor(question: Question, ids: Set<number>) {
 		this.#question = question;
 		this.#exam = new Exam(ids);
 	}
@@ -165,7 +167,7 @@ class QuestionInExam {
 		return this.#exam.isLast(this.#question.id);
 	}
 
-	markAcceptedClaims(acceptedClaims) {
+	markAcceptedClaims(acceptedClaims: Set<number>) {
 		this.#question.markAcceptedClaims(acceptedClaims);
 	}
 
@@ -178,7 +180,7 @@ class Controller {
 	#requester;
 
 	#login;
-	#ids;
+	#ids: Set<number> | undefined;
 
 	#titleElement;
 	#previousAnchor;
@@ -189,17 +191,18 @@ class Controller {
 	constructor() {
 		this.#requester = new Requester();
 
-		this.#login = new LoginController().readLogin();
-		if (this.#login === undefined) {
+		const login = new LoginController().readLogin();
+		if (login === undefined) {
 			throw new Error('No login.');
 		}
+		this.#login = login;
 		this.#ids = undefined;
 
-		this.#titleElement = document.getElementById('title');
-		this.#previousAnchor = document.getElementById('previous');
-		this.#nextAnchor = document.getElementById('next');
-		this.#endAnchor = document.getElementById('end');
-		this.#contentsDiv = document.getElementById('contents');
+		this.#titleElement = checkDefined(document.getElementById('title'));
+		this.#previousAnchor = asAnchor(document.getElementById('previous'));
+		this.#nextAnchor = asAnchor(document.getElementById('next'));
+		this.#endAnchor = asAnchor(document.getElementById('end'));
+		this.#contentsDiv = checkDefined(document.getElementById('contents'));
 	}
 
 	static #getIdFromUrl() {
@@ -213,12 +216,12 @@ class Controller {
 		}
 		return id;
 	}
-	
-	#setTitle(title) {
+
+	#setTitle(title: string) {
 		window.document.title = title;
 		this.#titleElement.innerHTML = title;
 	}
-	
+
 	/* Reads current id, queries and sets title. */
 	refresh() {
 		const id = Controller.#getIdFromUrl();
@@ -226,19 +229,18 @@ class Controller {
 		const overNb = this.#ids === undefined ? '…' : `… / ${this.#ids.size}`;
 		this.#setTitle(`Question ${overNb} (loading)`);
 
-		const promises = new Set();
+		let promiseIds: Promise<Set<number>>;
 		if (this.#ids === undefined) {
-			const promiseIds = this.#requester.list(this.#login);
-			promises.add(promiseIds);
+			promiseIds = this.#requester.list(this.#login);
 		} else {
-			promises.add(Promise.resolve(this.#ids));
+			promiseIds = Promise.resolve(this.#ids);
 		}
 		const promiseQuestion = this.#requester.getQuestion(this.#login, id);
-		promises.add(promiseQuestion);
-		Promise.all(promises).then(
+
+		Promise.all([promiseIds, promiseQuestion]).then(
 			ar => {
-				const ids = ar[0];
-				if (!ids.includes(id)) {
+				const ids: Set<number> = ar[0];
+				if (!ids.has(id)) {
 					throw new Error(`Unknown id: ${id}.`);
 				}
 				const questionElements = ar[1].questionElements;
@@ -251,7 +253,9 @@ class Controller {
 		);
 	}
 
-	#processQuestion(questionInExam) {
+	#processQuestion(questionInExam: QuestionInExam) {
+		const id = Controller.#getIdFromUrl();
+
 		if (this.#contentsDiv.children.length !== 0) {
 			throw new Error('Contents non empty.');
 		}
@@ -260,34 +264,42 @@ class Controller {
 
 		questionInExam.question.checkboxElements.forEach(
 			c => c.addEventListener('click',
-				_e => this.requester.answer(this.#login, id, questionInExam.question.acceptedClaims)
+				_e => this.#requester.acceptClaims(this.#login, id, questionInExam.question.acceptedClaims)
 			)
 		);
 
-		this.#previousAnchor.href = Controller.#getUrlOfId(questionInExam.previousId || '');
-		this.#nextAnchor.href = Controller.#getUrlOfId(questionInExam.nextId || '');
-		this.#previousAnchor.hidden = questionInExam.isFirst;
-		this.#nextAnchor.hidden = questionInExam.isLast;
+		{
+			const targetId = questionInExam.previousId;
+			this.#previousAnchor.hidden = questionInExam.isFirst;
+			verify(this.#previousAnchor.hidden === (targetId === undefined))
+			if (targetId !== undefined) {
+				this.#previousAnchor.href = Controller.#getUrlOfId(targetId).toString();
+			}
+		}
+		{
+			const targetId = questionInExam.nextId;
+			this.#nextAnchor.hidden = questionInExam.isLast;
+			verify(this.#nextAnchor.hidden === (targetId === undefined))
+			if (targetId !== undefined) {
+				this.#nextAnchor.href = Controller.#getUrlOfId(targetId).toString();
+			}
+		}
 		this.#endAnchor.hidden = !questionInExam.isLast;
-	
+
 		this.#setTitle(`Question ${questionInExam.position} / ${questionInExam.ids.size}`);
 		questionInExam.question.elements.forEach(e => this.#contentsDiv.appendChild(e));
 	}
 
-	static #getUrlOfId(id) {
+	static #getUrlOfId(id: number) {
 		const newUrl = new URL(window.location.href);
 		newUrl.search = `?${id}`;
 		return newUrl;
 	}
 
-	navigateTo(id) {
-		if (!id) {
-			throw new Error('No id.');
-		}
-
+	navigateTo(id: number) {
 		this.#contentsDiv.innerHTML = '';
 
-		history.pushState(id, id, Controller.#getUrlOfId(id));
+		history.pushState(id, `Question ${id}`, Controller.#getUrlOfId(id));
 		this.refresh();
 	}
 }
