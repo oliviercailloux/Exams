@@ -93,7 +93,7 @@ export class Requester {
 			const ids: Set<number> = new Set(l);
 			if (l.length !== ids.size) {
 				throw new Error(`Unexpected response size to ${requestName} (not all different): l`);
-			} return ids;
+			} return l;
 		});
 	}
 
