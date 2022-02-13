@@ -44,9 +44,9 @@ class Controller {
 		this.refresh();
 	}
 
-	#gotList(list: number[]) {
+	#gotList(list: Set<number>) {
 		console.log('Got list', list);
-		this.#navigate(list[0]);
+		this.#navigate(list.values().next().value);
 	}
 
 	#navigate(id: number) {
