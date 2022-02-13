@@ -1,7 +1,8 @@
 .jekyll-cache/
 docs/
 node_modules/
-modules/*.d.ts
+*.d.ts
 modules/*.js
+index.js
 tsconfig.tsbuildinfo
 
