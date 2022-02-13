@@ -1,5 +1,5 @@
-import { verify, checkDefined, asArrayOrThrow, asArrayOfIntegersOrThrow, asSetOfIntegersOrThrow } from './utils';
-import { Login } from './login';
+import { verify, checkDefined, asArrayOrThrow, asArrayOfIntegersOrThrow, asSetOfIntegersOrThrow } from './utils.js';
+import { Login } from './login.js';
 
 interface PostInit {
 	headers: Headers,
