@@ -79,8 +79,22 @@ export class Requester {
 			body: login.password
 		}
 
-		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'list');
-		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json());
+		const requestName = 'list';
+		const errorHandler = Requester.#getErrorHandlerExpecting(200, requestName);
+		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json()).then(l => {
+			if (!Array.isArray(l)) {
+				throw new Error(`Unexpected response to ${requestName} (not an array): l`);
+			} return l as Array<any>;
+		}).then(l => {
+			if (!l.every(Number.isInteger)) {
+				throw new Error(`Unexpected response content to ${requestName} (not all integers): l`);
+			} return l as Array<number>;
+		}).then(l => {
+			const ids: Set<number> = new Set(l);
+			if (l.length !== ids.size) {
+				throw new Error(`Unexpected response size to ${requestName} (not all different): l`);
+			} return ids;
+		});
 	}
 
 	getQuestion(login: Login, id: number) {
