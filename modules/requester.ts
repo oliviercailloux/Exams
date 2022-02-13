@@ -1,3 +1,4 @@
+import { verify, checkDefined, asArrayOrThrow, asArrayOfIntegersOrThrow, asSetOfIntegersOrThrow } from './utils';
 import { Login } from './login';
 
 interface PostInit {
@@ -81,47 +82,35 @@ export class Requester {
 
 		const requestName = 'list';
 		const errorHandler = Requester.#getErrorHandlerExpecting(200, requestName);
-		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json()).then(l => {
-			if (!Array.isArray(l)) {
-				throw new Error(`Unexpected response to ${requestName} (not an array): l`);
-			} return l as Array<any>;
-		}).then(l => {
-			if (!l.every(Number.isInteger)) {
-				throw new Error(`Unexpected response content to ${requestName} (not all integers): l`);
-			} return l as Array<number>;
-		}).then(l => {
-			const ids: Set<number> = new Set(l);
-			if (l.length !== ids.size) {
-				throw new Error(`Unexpected response size to ${requestName} (not all different): l`);
-			} return l;
-		});
+		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json()).then(asSetOfIntegersOrThrow);
 	}
 
-	getQuestion(login: Login, id: number) {
-		const promises = new Set();
+	getQuestion(login: Login, id: number): Promise<{ questionElements: Element[], acceptedClaims: Set<number> }> {
+		let promisePhrasing;
 		{
 			const init = Requester.#getFetchInit('GET', new Login(login.username, login.username));
 			init.headers.set('Accept', 'application/xhtml+xml');
 			const errorHandler = Requester.#getErrorHandlerExpecting(200, 'phrasing');
-			const promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init)
+			promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init)
 				.then(errorHandler)
 				.then(r => r.text())
 				.then(t => new DOMParser().parseFromString(t, 'application/xhtml+xml'))
 				.then(this.#getQuestionElements);
-			promises.add(promisePhrasing);
 		}
 
+		let promiseAcceptedClaims;
 		{
 			const init = Requester.#getFetchInit('GET', new Login(login.username, login.username));
 			init.headers.set('Accept', 'application/json');
 			const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 204]), 'acceptedClaims');
-			const promiseAcceptedClaims = fetch(`${this.#url}exam/answer/${id}`, init)
+			promiseAcceptedClaims = fetch(`${this.#url}exam/answer/${id}`, init)
 				.then(errorHandler)
-				.then(r => r.status === 200 ? r.json() : []);
-			promises.add(promiseAcceptedClaims);
+				.then(r => r.status === 200 ? r.json() : []).then(asSetOfIntegersOrThrow);
 		}
 
-		return Promise.all(promises).then(ar => new Object({
+		const promisesFulfilled: [Promise<Element[]>, Promise<Set<number>>] = [promisePhrasing, promiseAcceptedClaims];
+
+		return Promise.all(promisesFulfilled).then(ar => ({
 			questionElements: ar[0],
 			acceptedClaims: ar[1]
 		}));
