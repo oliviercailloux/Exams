@@ -3,6 +3,6 @@ docs/
 node_modules/
 *.d.ts
 modules/*.js
-index.js
+*.js
 tsconfig.tsbuildinfo
 
