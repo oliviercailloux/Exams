@@ -25,7 +25,7 @@ export class Requester {
 		}
 		console.log('Talking to', this.#url);
 
-		this.connect.bind(this);
+		this.register.bind(this);
 		this.list.bind(this);
 		this.getQuestion.bind(this);
 		this.#getQuestionElements.bind(this);
@@ -58,21 +58,26 @@ export class Requester {
 		};
 	}
 
-	connect(username: string) {
-		const initial = Requester.#getFetchInit('POST');
-		initial.headers.set('Accept', 'text/plain');
+	register(username: string, examPassword: string) {
+		const initial = Requester.#getFetchInit('POST', new Login(username, username));
 		initial.headers.set('content-type', 'text/plain');
+		initial.headers.set('Accept', 'text/plain');
 		const init: PostInit = {
 			...initial,
-			body: username
+			body: examPassword
 		}
 		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'connect');
 		return fetch(`${this.#url}exam/connect`, init).then(errorHandler).then(r => r.text());
 	}
 
 	list(login: Login) {
-		const init = Requester.#getFetchInit('GET', login);
-		init.headers.set('Accept', 'application/json');
+		const initial = Requester.#getFetchInit('GET', new Login(login.username, login.username));
+		initial.headers.set('content-type', 'text/plain');
+		initial.headers.set('Accept', 'application/json');
+		const init: PostInit = {
+			...initial,
+			body: login.password
+		}
 
 		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'list');
 		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json());
@@ -81,7 +86,7 @@ export class Requester {
 	getQuestion(login: Login, id: number) {
 		const promises = new Set();
 		{
-			const init = Requester.#getFetchInit('GET', login);
+			const init = Requester.#getFetchInit('GET', new Login(login.username, login.username));
 			init.headers.set('Accept', 'application/xhtml+xml');
 			const errorHandler = Requester.#getErrorHandlerExpecting(200, 'phrasing');
 			const promisePhrasing = fetch(`${this.#url}question/phrasing/${id}`, init)
@@ -93,7 +98,7 @@ export class Requester {
 		}
 
 		{
-			const init = Requester.#getFetchInit('GET', login);
+			const init = Requester.#getFetchInit('GET', new Login(login.username, login.username));
 			init.headers.set('Accept', 'application/json');
 			const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 204]), 'acceptedClaims');
 			const promiseAcceptedClaims = fetch(`${this.#url}exam/answer/${id}`, init)
@@ -124,7 +129,7 @@ export class Requester {
 	}
 
 	acceptClaims(login: Login, questionId: number, acceptedClaimsIds: Set<number>) {
-		const initial = Requester.#getFetchInit('POST', login);
+		const initial = Requester.#getFetchInit('POST', new Login(login.username, login.username));
 		initial.headers.set('Accept', 'text/plain');
 		initial.headers.set('content-type', 'text/plain');
 		initial.headers.set('content-type', 'application/json');
