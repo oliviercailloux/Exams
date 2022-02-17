@@ -1,1 +1,1 @@
-Sitemap: https://oliviercailloux.github.io/exam/sitemap.xml
+Sitemap: https://oliviercailloux.github.io/Exams/sitemap.xml
