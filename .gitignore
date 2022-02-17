@@ -1,4 +1,5 @@
 .jekyll-cache/
+docs/
 node_modules/
 *.d.ts
 modules/*.js
