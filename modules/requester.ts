@@ -22,7 +22,7 @@ export class Requester {
 		if (isLocalhost) {
 			this.#url = `http://${window.location.hostname}:8080/v0/`;
 		} else {
-			this.#url = 'https://todo.herokuapp.com/v0/';
+			this.#url = 'https://jquestions.herokuapp.com/v0/';
 		}
 		console.log('Talking to', this.#url);
 
