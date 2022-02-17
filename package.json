@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@tsconfig/recommended": "^1.0.1",
-    "@tsconfig/strictest": "^1.0.0"
-  }
-}
