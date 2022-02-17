@@ -60,7 +60,8 @@ export class Login {
 	}
 
 	get credentials() {
-		return window.btoa(`${this.#stringToUtf8ToBase64(this.#username)}:${this.#stringToUtf8ToBase64(this.#password)}`);
+		const credentials = `${this.#stringToUtf8ToBase64(this.#username)}:${this.#stringToUtf8ToBase64(this.#password)}`;
+		return window.btoa(credentials);
 	}
 }
 
@@ -71,7 +72,7 @@ export class LoginController {
 		this.readLogin = this.readLogin.bind(this);
 		this.write = this.write.bind(this);
 		this.deleteLogin = this.deleteLogin.bind(this);
-		
+
 		this.#localStorage = window.localStorage;
 	}
 

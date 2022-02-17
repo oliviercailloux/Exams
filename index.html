@@ -9,8 +9,12 @@ extra_js:
 		<h1>{{ page.title }}</h1>
 	</header>
 	<div class="contents">
-		<label for="name">Indiquez votre nom SVP.</label>
-		<input type="text" id="name" name="name" required size="40" />
-		<input type="button" id="start" value="Commencer" />
+		<div class="form">
+			<label for="name">E-mail Dauphine</label>
+			<input type="text" id="name" name="name" required size="40" />
+			<label for="exam-password">Mot de passe du questionnaire</label>
+			<input type="text" id="exam-password" name="exam-password" required size="2" />
+		</div>
+		<button type="button" id="start">Commencer</button>
 	</div>
 </article>

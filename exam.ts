@@ -1,6 +1,6 @@
-import { verify, checkDefined, asAnchor } from './modules/utils';
-import { Requester } from './modules/requester';
-import { Login, LoginController } from './modules/login';
+import { verify, checkDefined, asAnchor } from './modules/utils.js';
+import { Requester } from './modules/requester.js';
+import { Login, LoginController } from './modules/login.js';
 
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 	throw new Error('Protocol should be https.');
@@ -8,17 +8,16 @@ if (window.location.protocol !== 'https:' && location.hostname !== "localhost" &
 
 class Question {
 	#id;
-	#elements;
+	#element;
 	#checkboxElements;
 
-	constructor(id: number, elements: Iterable<Element>) {
+	constructor(id: number, element: HTMLElement) {
 		verify(id >= 0);
 
 		this.#id = id;
-		this.#elements = Array.from(elements);
+		this.#element = element;
 
-		const inputs = Array.from(document.getElementsByTagName('input'));
-		/*		this.#checkboxElements = inputs.filter(i => i.attributes.getNamedItem('type').value === 'checkbox');*/
+		const inputs = Array.from(this.#element.getElementsByTagName('input'));
 		this.#checkboxElements = inputs.filter(i => i.type === 'checkbox');
 	}
 
@@ -26,8 +25,8 @@ class Question {
 		return this.#id;
 	}
 
-	get elements() {
-		return this.#elements;
+	get element() {
+		return this.#element;
 	}
 
 	get checkboxElements() {
@@ -183,6 +182,7 @@ class Controller {
 	#ids: Set<number> | undefined;
 
 	#titleElement;
+	#statusElement;
 	#previousAnchor;
 	#nextAnchor;
 	#endAnchor;
@@ -199,6 +199,7 @@ class Controller {
 		this.#ids = undefined;
 
 		this.#titleElement = checkDefined(document.getElementById('title'));
+		this.#statusElement = checkDefined(document.getElementById('status'));
 		this.#previousAnchor = asAnchor(document.getElementById('previous'));
 		this.#nextAnchor = asAnchor(document.getElementById('next'));
 		this.#endAnchor = asAnchor(document.getElementById('end'));
@@ -217,9 +218,17 @@ class Controller {
 		return id;
 	}
 
-	#setTitle(title: string) {
-		window.document.title = title;
+	#setTitle(title: string, status?: string) {
+		const statusString = (status === undefined) ? '' : `(${status})`;
+		const fullTitle = `${title} ${statusString}`;
+		window.document.title = fullTitle;
 		this.#titleElement.innerHTML = title;
+		this.#setStatus(status);
+	}
+
+	#setStatus(status?: string) {
+		const statusString = (status === undefined) ? '' : `(${status})`;
+		this.#statusElement.textContent = `${statusString}`;
 	}
 
 	/* Reads current id, queries and sets title. */
@@ -227,7 +236,7 @@ class Controller {
 		const id = Controller.#getIdFromUrl();
 
 		const overNb = this.#ids === undefined ? '…' : `… / ${this.#ids.size}`;
-		this.#setTitle(`Question ${overNb} (loading)`);
+		this.#setTitle(`Question ${overNb}`, 'loading');
 
 		let promiseIds: Promise<Set<number>>;
 		if (this.#ids === undefined) {
@@ -243,9 +252,9 @@ class Controller {
 				if (!ids.has(id)) {
 					throw new Error(`Unknown id: ${id}.`);
 				}
-				const questionElements = ar[1].questionElements;
+				const questionElement = ar[1].questionElement;
 				const acceptedClaims = ar[1].acceptedClaims;
-				const question = new QuestionInExam(new Question(id, questionElements), ids);
+				const question = new QuestionInExam(new Question(id, questionElement), ids);
 				question.markAcceptedClaims(acceptedClaims);
 				return this.#processQuestion(question);
 			}
@@ -253,41 +262,50 @@ class Controller {
 		);
 	}
 
-	#processQuestion(questionInExam: QuestionInExam) {
-		const id = Controller.#getIdFromUrl();
+	#acceptClaims(q: QuestionInExam) {
+		q.question.checkboxElements.forEach(e => e.disabled = true);
+		this.#setStatus('*');
+		this.#requester.acceptClaims(this.#login, Controller.#getIdFromUrl(), q.question.acceptedClaims)
+			.then(() => {
+				q.question.checkboxElements.forEach(e => e.disabled = false);
+				this.#setStatus(undefined);
+			});
+	}
 
+	#processQuestion(q: QuestionInExam) {
 		if (this.#contentsDiv.children.length !== 0) {
 			throw new Error('Contents non empty.');
 		}
 
-		this.#ids = questionInExam.ids;
+		this.#ids = q.ids;
 
-		questionInExam.question.checkboxElements.forEach(
+		console.log('Listening about', q.question.checkboxElements);
+		q.question.checkboxElements.forEach(
 			c => c.addEventListener('click',
-				_e => this.#requester.acceptClaims(this.#login, id, questionInExam.question.acceptedClaims)
+				_e => this.#acceptClaims.bind(this)(q)
 			)
 		);
 
 		{
-			const targetId = questionInExam.previousId;
-			this.#previousAnchor.hidden = questionInExam.isFirst;
+			const targetId = q.previousId;
+			this.#previousAnchor.hidden = q.isFirst;
 			verify(this.#previousAnchor.hidden === (targetId === undefined))
 			if (targetId !== undefined) {
 				this.#previousAnchor.href = Controller.#getUrlOfId(targetId).toString();
 			}
 		}
 		{
-			const targetId = questionInExam.nextId;
-			this.#nextAnchor.hidden = questionInExam.isLast;
+			const targetId = q.nextId;
+			this.#nextAnchor.hidden = q.isLast;
 			verify(this.#nextAnchor.hidden === (targetId === undefined))
 			if (targetId !== undefined) {
 				this.#nextAnchor.href = Controller.#getUrlOfId(targetId).toString();
 			}
 		}
-		this.#endAnchor.hidden = !questionInExam.isLast;
+//		this.#endAnchor.hidden = !q.isLast;
 
-		this.#setTitle(`Question ${questionInExam.position} / ${questionInExam.ids.size}`);
-		questionInExam.question.elements.forEach(e => this.#contentsDiv.appendChild(e));
+		this.#setTitle(`Question ${q.position} / ${q.ids.size}`);
+		Array.from(q.question.element.children).forEach(e => this.#contentsDiv.appendChild(e));
 	}
 
 	static #getUrlOfId(id: number) {

@@ -60,6 +60,7 @@ export class Requester {
 	}
 
 	register(username: string, examPassword: string) {
+		console.log('Preparing register');
 		const initial = Requester.#getFetchInit('POST', new Login(username, username));
 		initial.headers.set('content-type', 'text/plain');
 		initial.headers.set('Accept', 'text/plain');
@@ -68,24 +69,19 @@ export class Requester {
 			body: examPassword
 		}
 		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'connect');
-		return fetch(`${this.#url}exam/connect`, init).then(errorHandler).then(r => r.text());
+		return fetch(`${this.#url}exam/1/register`, init).then(errorHandler).then(r => r.text());
 	}
 
 	list(login: Login) {
-		const initial = Requester.#getFetchInit('GET', new Login(login.username, login.username));
-		initial.headers.set('content-type', 'text/plain');
-		initial.headers.set('Accept', 'application/json');
-		const init: PostInit = {
-			...initial,
-			body: login.password
-		}
+		const init = Requester.#getFetchInit('GET', new Login(login.username, login.username));
+		init.headers.set('Accept', 'application/json');
 
 		const requestName = 'list';
 		const errorHandler = Requester.#getErrorHandlerExpecting(200, requestName);
-		return fetch(`${this.#url}exam/list`, init).then(errorHandler).then(r => r.json()).then(asSetOfIntegersOrThrow);
+		return fetch(`${this.#url}exam/1/list?personal=${login.password}`, init).then(errorHandler).then(r => r.json()).then(asSetOfIntegersOrThrow);
 	}
 
-	getQuestion(login: Login, id: number): Promise<{ questionElements: Element[], acceptedClaims: Set<number> }> {
+	getQuestion(login: Login, id: number): Promise<{ questionElement: HTMLElement, acceptedClaims: Set<number> }> {
 		let promisePhrasing;
 		{
 			const init = Requester.#getFetchInit('GET', new Login(login.username, login.username));
@@ -103,15 +99,15 @@ export class Requester {
 			const init = Requester.#getFetchInit('GET', new Login(login.username, login.username));
 			init.headers.set('Accept', 'application/json');
 			const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 204]), 'acceptedClaims');
-			promiseAcceptedClaims = fetch(`${this.#url}exam/answer/${id}`, init)
+			promiseAcceptedClaims = fetch(`${this.#url}exam/1/answer/${id}`, init)
 				.then(errorHandler)
 				.then(r => r.status === 200 ? r.json() : []).then(asSetOfIntegersOrThrow);
 		}
 
-		const promisesFulfilled: [Promise<Element[]>, Promise<Set<number>>] = [promisePhrasing, promiseAcceptedClaims];
+		const promisesFulfilled: [Promise<HTMLElement>, Promise<Set<number>>] = [promisePhrasing, promiseAcceptedClaims];
 
 		return Promise.all(promisesFulfilled).then(ar => ({
-			questionElements: ar[0],
+			questionElement: ar[0],
 			acceptedClaims: ar[1]
 		}));
 	}
@@ -123,25 +119,24 @@ export class Requester {
 		if (sectionChildren.length != 1) {
 			throw new Error(`Unexpected sections inside body in ${phrasingDom}`);
 		}
-		const sectionElement = sectionChildren[0];
+		const sectionElement = sectionChildren[0] as HTMLElement;
 		const questionElements = Array.from(sectionElement.children);
 		if (questionElements.length === 0) {
 			throw new Error('No content');
 		}
-		return questionElements;
+		return sectionElement;
 	}
 
-	acceptClaims(login: Login, questionId: number, acceptedClaimsIds: Set<number>) {
+	acceptClaims(login: Login, questionId: number, acceptedClaimsIds: Set<number>): Promise<void> {
+		console.log('Accepting', acceptedClaimsIds);
 		const initial = Requester.#getFetchInit('POST', new Login(login.username, login.username));
-		initial.headers.set('Accept', 'text/plain');
-		initial.headers.set('content-type', 'text/plain');
 		initial.headers.set('content-type', 'application/json');
 		const init: PostInit = {
 			...initial,
-			body: JSON.stringify(acceptedClaimsIds)
+			body: JSON.stringify(Array.from(acceptedClaimsIds))
 		}
 
 		const errorHandler = Requester.#getErrorHandlerExpecting(204, 'acceptClaims');
-		return fetch(`${this.#url}exam/answer/${questionId}`, init).then(errorHandler);
+		return fetch(`${this.#url}exam/1/answer/${questionId}`, init).then(errorHandler).then(_r => undefined);
 	}
 }

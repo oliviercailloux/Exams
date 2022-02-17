@@ -1,5 +1,6 @@
 import { Requester } from './modules/requester.js';
 import { Login, LoginController } from './modules/login.js';
+import { asInput, asButton } from './modules/utils.js';
 
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 	throw new Error('Protocol should be https.');
@@ -10,7 +11,8 @@ class Controller {
 	#login: Login | undefined;
 	#requester: Requester;
 
-	#nameElement: HTMLTextAreaElement;
+	#nameElement: HTMLInputElement;
+	#examPasswordElement: HTMLInputElement;
 	#startButton: HTMLButtonElement;
 
 	constructor() {
@@ -18,11 +20,12 @@ class Controller {
 
 		this.#loginController = new LoginController();
 		this.#requester = new Requester();
-		
+
 		this.refresh = this.refresh.bind(this);
-		
-		this.#nameElement = document.getElementById('name') as HTMLTextAreaElement;
-		this.#startButton = document.getElementById('start') as HTMLButtonElement;
+
+		this.#nameElement = asInput(document.getElementById('name'));
+		this.#examPasswordElement = asInput(document.getElementById('exam-password'));
+		this.#startButton = asButton(document.getElementById('start'));
 		this.#startButton.addEventListener('click', this.#start.bind(this));
 	}
 
@@ -35,7 +38,8 @@ class Controller {
 	}
 
 	#start(_event: Event) {
-		this.#requester.register(this.#nameElement.value, "").then(this.#gotPersonalExamPassword.bind(this));
+		this.#requester.register(this.#nameElement.value, this.#examPasswordElement.value || "ep")
+			.then(this.#gotPersonalExamPassword.bind(this));
 	}
 
 	#gotPersonalExamPassword(personalExamPassword: string) {

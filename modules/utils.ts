@@ -41,3 +41,17 @@ export function asAnchor(origin: any, message?: string) {
 	}
 	return origin;
 }
+
+export function asInput(origin: any, message?: string) {
+	if(!(origin instanceof HTMLInputElement)) {
+		throw new Error(message || `Not an input: ${origin}.`);
+	}
+	return origin;
+}
+
+export function asButton(origin: any, message?: string) {
+	if(!(origin instanceof HTMLButtonElement)) {
+		throw new Error(message || `Not a button: ${origin}.`);
+	}
+	return origin;
+}
