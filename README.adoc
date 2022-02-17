@@ -1,13 +1,4 @@
-= The Diet Website.
+= Exams
 
-. sudo apt-get install jekyll ruby-jekyll-sitemap ruby-jekyll-seo-tag
-. `git clone ssh://git@github.com/oliviercailloux/diet-web.git --branch gh-pages docs`
-. Build with jekyll locally: `jekyll serve`
-. Produce with jekyll (uses site.url, …): `JEKYLL_ENV=production jekyll build`
-. Validate: `java -jar ~/Logiciels/Progra/vnu.jar docs/index.html`
-. Push to GitHub: `cd docs ; git commit -m "Updt gen" . ; git push ; cd ..`
-. Check that it is updated
-** curl -u oliviercailloux https://api.github.com/repos/oliviercailloux/diet-web/pages/builds/latest (but see https://developer.github.com/changes/2020-02-14-deprecating-password-auth/)
-** https://github.com/oliviercailloux/diet-web/commits/master
-. Browse to https://oliviercailloux.github.io/diet-web/
+See The Diet Website for docs.
 
