@@ -3,7 +3,7 @@ plugins:
   - jekyll-seo-tag
 destination: docs
 url: https://oliviercailloux.github.io
-baseurl: /exam
+baseurl: /Exams
 exclude:
   - README.adoc
   - Local notes.adoc
