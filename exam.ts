@@ -240,7 +240,12 @@ class Controller {
 
 		let promiseIds: Promise<Set<number>>;
 		if (this.#ids === undefined) {
-			promiseIds = this.#requester.list(this.#login);
+			promiseIds = this.#requester.list(this.#login)
+				.then(ids => {
+					if (ids === undefined)
+						throw new Error('List failed');
+					return ids;
+				});
 		} else {
 			promiseIds = Promise.resolve(this.#ids);
 		}
@@ -302,7 +307,7 @@ class Controller {
 				this.#nextAnchor.href = Controller.#getUrlOfId(targetId).toString();
 			}
 		}
-//		this.#endAnchor.hidden = !q.isLast;
+		//		this.#endAnchor.hidden = !q.isLast;
 
 		this.#setTitle(`Question ${q.position} / ${q.ids.size}`);
 		Array.from(q.question.element.children).forEach(e => this.#contentsDiv.appendChild(e));

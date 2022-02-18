@@ -33,15 +33,26 @@ class Controller {
 		this.#login = this.#loginController.readLogin();
 
 		if (this.#login !== undefined) {
-			this.#requester.list(this.#login).then(this.#gotList.bind(this));
+			this.#requester.list(this.#login).then(l => l === undefined ? this.#listNotFound() : this.#gotList(l));
 		}
 	}
-
-	#start(_event: Event) {
-		this.#requester.register(this.#nameElement.value, this.#examPasswordElement.value || "ep")
-			.then(this.#gotPersonalExamPassword.bind(this));
+	
+	#listNotFound() {
+		console.log('List not found, deleting login.');
+		this.#loginController.deleteLogin();
+		this.refresh();
 	}
-
+	
+	#start(_event: Event) {
+		this.#startButton.disabled = true;
+		this.#requester.register(this.#nameElement.value, this.#examPasswordElement.value || "ep")
+			.then(pw => pw === undefined ? this.#registerConflict() : this.#gotPersonalExamPassword(pw));
+	}
+	
+	#registerConflict() {
+		console.log('Registration conflicts.');
+	}
+	
 	#gotPersonalExamPassword(personalExamPassword: string) {
 		const login = new Login(this.#nameElement.value, personalExamPassword);
 		this.#loginController.write(login);
