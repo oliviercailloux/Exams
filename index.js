@@ -9,7 +9,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _Controller_instances, _Controller_loginController, _Controller_login, _Controller_requester, _Controller_nameElement, _Controller_examPasswordElement, _Controller_startButton, _Controller_start, _Controller_gotPersonalExamPassword, _Controller_gotList, _Controller_navigate, _Controller_resetLogin;
+var _Controller_instances, _Controller_loginController, _Controller_login, _Controller_requester, _Controller_nameElement, _Controller_examPasswordElement, _Controller_startButton, _Controller_listNotFound, _Controller_start, _Controller_registerConflict, _Controller_gotPersonalExamPassword, _Controller_gotList, _Controller_navigate, _Controller_resetLogin;
 import { Requester } from './modules/requester.js';
 import { Login, LoginController } from './modules/login.js';
 import { asInput, asButton } from './modules/utils.js';
@@ -37,13 +37,20 @@ class Controller {
     refresh() {
         __classPrivateFieldSet(this, _Controller_login, __classPrivateFieldGet(this, _Controller_loginController, "f").readLogin(), "f");
         if (__classPrivateFieldGet(this, _Controller_login, "f") !== undefined) {
-            __classPrivateFieldGet(this, _Controller_requester, "f").list(__classPrivateFieldGet(this, _Controller_login, "f")).then(__classPrivateFieldGet(this, _Controller_instances, "m", _Controller_gotList).bind(this));
+            __classPrivateFieldGet(this, _Controller_requester, "f").list(__classPrivateFieldGet(this, _Controller_login, "f")).then(l => l === undefined ? __classPrivateFieldGet(this, _Controller_instances, "m", _Controller_listNotFound).call(this) : __classPrivateFieldGet(this, _Controller_instances, "m", _Controller_gotList).call(this, l));
         }
     }
 }
-_Controller_loginController = new WeakMap(), _Controller_login = new WeakMap(), _Controller_requester = new WeakMap(), _Controller_nameElement = new WeakMap(), _Controller_examPasswordElement = new WeakMap(), _Controller_startButton = new WeakMap(), _Controller_instances = new WeakSet(), _Controller_start = function _Controller_start(_event) {
+_Controller_loginController = new WeakMap(), _Controller_login = new WeakMap(), _Controller_requester = new WeakMap(), _Controller_nameElement = new WeakMap(), _Controller_examPasswordElement = new WeakMap(), _Controller_startButton = new WeakMap(), _Controller_instances = new WeakSet(), _Controller_listNotFound = function _Controller_listNotFound() {
+    console.log('List not found, deleting login.');
+    __classPrivateFieldGet(this, _Controller_loginController, "f").deleteLogin();
+    this.refresh();
+}, _Controller_start = function _Controller_start(_event) {
+    __classPrivateFieldGet(this, _Controller_startButton, "f").disabled = true;
     __classPrivateFieldGet(this, _Controller_requester, "f").register(__classPrivateFieldGet(this, _Controller_nameElement, "f").value, __classPrivateFieldGet(this, _Controller_examPasswordElement, "f").value || "ep")
-        .then(__classPrivateFieldGet(this, _Controller_instances, "m", _Controller_gotPersonalExamPassword).bind(this));
+        .then(pw => pw === undefined ? __classPrivateFieldGet(this, _Controller_instances, "m", _Controller_registerConflict).call(this) : __classPrivateFieldGet(this, _Controller_instances, "m", _Controller_gotPersonalExamPassword).call(this, pw));
+}, _Controller_registerConflict = function _Controller_registerConflict() {
+    console.log('Registration conflicts.');
 }, _Controller_gotPersonalExamPassword = function _Controller_gotPersonalExamPassword(personalExamPassword) {
     const login = new Login(__classPrivateFieldGet(this, _Controller_nameElement, "f").value, personalExamPassword);
     __classPrivateFieldGet(this, _Controller_loginController, "f").write(login);

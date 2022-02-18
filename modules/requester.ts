@@ -68,8 +68,9 @@ export class Requester {
 			...initial,
 			body: examPassword
 		}
-		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'connect');
-		return fetch(`${this.#url}exam/1/register`, init).then(errorHandler).then(r => r.text());
+		const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 409]), 'connect');
+		return fetch(`${this.#url}exam/1/register`, init).then(errorHandler)
+			.then(r => r.status === 409 ? undefined : r.text());
 	}
 
 	list(login: Login) {
@@ -77,8 +78,10 @@ export class Requester {
 		init.headers.set('Accept', 'application/json');
 
 		const requestName = 'list';
-		const errorHandler = Requester.#getErrorHandlerExpecting(200, requestName);
-		return fetch(`${this.#url}exam/1/list?personal=${login.password}`, init).then(errorHandler).then(r => r.json()).then(asSetOfIntegersOrThrow);
+		const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 404]), requestName);
+		return fetch(`${this.#url}exam/1/list?personal=${login.password}`, init).then(errorHandler)
+			.then(r => r.status === 404 ? undefined : r.json())
+			.then(j => j === undefined ? undefined : asSetOfIntegersOrThrow(j));
 	}
 
 	getQuestion(login: Login, id: number): Promise<{ questionElement: HTMLElement, acceptedClaims: Set<number> }> {

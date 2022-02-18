@@ -41,15 +41,18 @@ export class Requester {
         initial.headers.set('content-type', 'text/plain');
         initial.headers.set('Accept', 'text/plain');
         const init = Object.assign(Object.assign({}, initial), { body: examPassword });
-        const errorHandler = __classPrivateFieldGet(Requester, _a, "m", _Requester_getErrorHandlerExpecting).call(Requester, 200, 'connect');
-        return fetch(`${__classPrivateFieldGet(this, _Requester_url, "f")}exam/1/register`, init).then(errorHandler).then(r => r.text());
+        const errorHandler = __classPrivateFieldGet(Requester, _a, "m", _Requester_getErrorHandlerExpecting).call(Requester, new Set([200, 409]), 'connect');
+        return fetch(`${__classPrivateFieldGet(this, _Requester_url, "f")}exam/1/register`, init).then(errorHandler)
+            .then(r => r.status === 409 ? undefined : r.text());
     }
     list(login) {
         const init = __classPrivateFieldGet(Requester, _a, "m", _Requester_getFetchInit).call(Requester, 'GET', new Login(login.username, login.username));
         init.headers.set('Accept', 'application/json');
         const requestName = 'list';
-        const errorHandler = __classPrivateFieldGet(Requester, _a, "m", _Requester_getErrorHandlerExpecting).call(Requester, 200, requestName);
-        return fetch(`${__classPrivateFieldGet(this, _Requester_url, "f")}exam/1/list?personal=${login.password}`, init).then(errorHandler).then(r => r.json()).then(asSetOfIntegersOrThrow);
+        const errorHandler = __classPrivateFieldGet(Requester, _a, "m", _Requester_getErrorHandlerExpecting).call(Requester, new Set([200, 404]), requestName);
+        return fetch(`${__classPrivateFieldGet(this, _Requester_url, "f")}exam/1/list?personal=${login.password}`, init).then(errorHandler)
+            .then(r => r.status === 404 ? undefined : r.json())
+            .then(j => j === undefined ? undefined : asSetOfIntegersOrThrow(j));
     }
     getQuestion(login, id) {
         let promisePhrasing;

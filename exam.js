@@ -189,7 +189,12 @@ class Controller {
         __classPrivateFieldGet(this, _Controller_instances, "m", _Controller_setTitle).call(this, `Question ${overNb}`, 'loading');
         let promiseIds;
         if (__classPrivateFieldGet(this, _Controller_ids, "f") === undefined) {
-            promiseIds = __classPrivateFieldGet(this, _Controller_requester, "f").list(__classPrivateFieldGet(this, _Controller_login, "f"));
+            promiseIds = __classPrivateFieldGet(this, _Controller_requester, "f").list(__classPrivateFieldGet(this, _Controller_login, "f"))
+                .then(ids => {
+                if (ids === undefined)
+                    throw new Error('List failed');
+                return ids;
+            });
         }
         else {
             promiseIds = Promise.resolve(__classPrivateFieldGet(this, _Controller_ids, "f"));
