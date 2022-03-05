@@ -35,6 +35,13 @@ export function asSetOfIntegersOrThrow(origin: any | undefined | null, message?:
 	return s;
 }
 
+export function asElement(origin: any, message?: string) {
+	if(!(origin instanceof HTMLElement)) {
+		throw new Error(message || `Not an element: ${origin}.`);
+	}
+	return origin;
+}
+
 export function asAnchor(origin: any, message?: string) {
 	if(!(origin instanceof HTMLAnchorElement)) {
 		throw new Error(message || `Not an anchor: ${origin}.`);

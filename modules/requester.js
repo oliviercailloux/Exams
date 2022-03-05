@@ -41,9 +41,9 @@ export class Requester {
         initial.headers.set('content-type', 'text/plain');
         initial.headers.set('Accept', 'text/plain');
         const init = Object.assign(Object.assign({}, initial), { body: examPassword });
-        const errorHandler = __classPrivateFieldGet(Requester, _a, "m", _Requester_getErrorHandlerExpecting).call(Requester, new Set([200, 409]), 'connect');
+        const errorHandler = __classPrivateFieldGet(Requester, _a, "m", _Requester_getErrorHandlerExpecting).call(Requester, 200, 'connect');
         return fetch(`${__classPrivateFieldGet(this, _Requester_url, "f")}exam/1/register`, init).then(errorHandler)
-            .then(r => r.status === 409 ? undefined : r.text());
+            .then(r => r.text());
     }
     list(login) {
         const init = __classPrivateFieldGet(Requester, _a, "m", _Requester_getFetchInit).call(Requester, 'GET', new Login(login.username, login.username));

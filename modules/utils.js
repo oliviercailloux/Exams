@@ -30,6 +30,12 @@ export function asSetOfIntegersOrThrow(origin, message) {
     }
     return s;
 }
+export function asElement(origin, message) {
+    if (!(origin instanceof HTMLElement)) {
+        throw new Error(message || `Not an element: ${origin}.`);
+    }
+    return origin;
+}
 export function asAnchor(origin, message) {
     if (!(origin instanceof HTMLAnchorElement)) {
         throw new Error(message || `Not an anchor: ${origin}.`);

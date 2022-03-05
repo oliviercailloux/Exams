@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <base href="https://oliviercailloux.github.io/Exams/">
+    <base href="http://localhost:4000/Exams/">
     <link rel="stylesheet" href="styles.css">
     <link rel="shortcut icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://use.fontawesome.com/releases/v5.15.3/js/all.js"></script>
@@ -17,13 +17,13 @@
 <meta property="og:locale" content="fr" />
 <meta name="description" content="Tester ses connaissances avec des questions à choix multiples" />
 <meta property="og:description" content="Tester ses connaissances avec des questions à choix multiples" />
-<link rel="canonical" href="https://oliviercailloux.github.io/Exams/" />
-<meta property="og:url" content="https://oliviercailloux.github.io/Exams/" />
+<link rel="canonical" href="http://localhost:4000/Exams/" />
+<meta property="og:url" content="http://localhost:4000/Exams/" />
 <meta property="og:site_name" content="Exam" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Accueil" />
 <script type="application/ld+json">
-{"description":"Tester ses connaissances avec des questions à choix multiples","@type":"WebSite","headline":"Accueil","url":"https://oliviercailloux.github.io/Exams/","name":"Exam","@context":"https://schema.org"}</script>
+{"description":"Tester ses connaissances avec des questions à choix multiples","@type":"WebSite","headline":"Accueil","url":"http://localhost:4000/Exams/","name":"Exam","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
 
@@ -40,10 +40,11 @@
 		<div class="form">
 			<label for="name">E-mail Dauphine</label>
 			<input type="text" id="name" name="name" required size="40" />
-			<label for="exam-password" hidden>Mot de passe du questionnaire</label>
-			<input type="text" id="exam-password" name="exam-password" required size="2" hidden />
+			<label for="exam-password">Mot de passe du questionnaire</label>
+			<input type="text" id="exam-password" name="exam-password" required size="2" />
 		</div>
 		<button type="button" id="start">Commencer</button>
+		<p id="errors"></p>
 	</div>
 </article>
   </body>
