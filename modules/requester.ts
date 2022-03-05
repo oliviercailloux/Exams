@@ -68,9 +68,9 @@ export class Requester {
 			...initial,
 			body: examPassword
 		}
-		const errorHandler = Requester.#getErrorHandlerExpecting(new Set([200, 409]), 'connect');
+		const errorHandler = Requester.#getErrorHandlerExpecting(200, 'connect');
 		return fetch(`${this.#url}exam/1/register`, init).then(errorHandler)
-			.then(r => r.status === 409 ? undefined : r.text());
+			.then(r => r.text());
 	}
 
 	list(login: Login) {

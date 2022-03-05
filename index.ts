@@ -1,6 +1,6 @@
 import { Requester } from './modules/requester.js';
 import { Login, LoginController } from './modules/login.js';
-import { asInput, asButton } from './modules/utils.js';
+import { asInput, asButton, asElement } from './modules/utils.js';
 
 if (window.location.protocol !== 'https:' && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 	throw new Error('Protocol should be https.');
@@ -10,23 +10,27 @@ class Controller {
 	#loginController: LoginController;
 	#login: Login | undefined;
 	#requester: Requester;
+	#errors: string[];
 
 	#nameElement: HTMLInputElement;
 	#examPasswordElement: HTMLInputElement;
 	#startButton: HTMLButtonElement;
-
+	#errorsElement: HTMLElement;
+	
 	constructor() {
 		console.log('Building controller.');
 
 		this.#loginController = new LoginController();
 		this.#requester = new Requester();
-
+		this.#errors = new Array();
+		
 		this.refresh = this.refresh.bind(this);
 
 		this.#nameElement = asInput(document.getElementById('name'));
 		this.#examPasswordElement = asInput(document.getElementById('exam-password'));
 		this.#startButton = asButton(document.getElementById('start'));
 		this.#startButton.addEventListener('click', this.#start.bind(this));
+		this.#errorsElement = asElement(document.getElementById('errors'));
 	}
 
 	refresh() {
@@ -45,12 +49,14 @@ class Controller {
 	
 	#start(_event: Event) {
 		this.#startButton.disabled = true;
-		this.#requester.register(this.#nameElement.value, this.#examPasswordElement.value || "ep")
-			.then(pw => pw === undefined ? this.#registerConflict() : this.#gotPersonalExamPassword(pw));
+		this.#requester.register(this.#nameElement.value, this.#examPasswordElement.value)
+			.then(pw => this.#gotPersonalExamPassword(pw)).catch(e => this.#error.bind(this)(`Registration failed: ${e}`));
 	}
 	
-	#registerConflict() {
-		console.log('Registration conflicts.');
+	#error(reason: string) {
+		this.#errors.push(reason);
+		this.#errorsElement.innerHTML = this.#errors.join('; ');
+		this.#startButton.disabled = false;
 	}
 	
 	#gotPersonalExamPassword(personalExamPassword: string) {
